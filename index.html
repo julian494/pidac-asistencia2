@@ -1969,11 +1969,12 @@ function loadModels(){
 }
 loadModels();
 
+function _getFace(id){ return (faces||{})[id]||null; }
+
 async function buildDescriptors(){
   if(!modelsLoaded) return;
-  const db = loadFaceDB();
   faceDescriptors = [];
-  for(const [studentId, data] of Object.entries(db)){
+  for(const [studentId, data] of Object.entries(faces||{})){
     try{
       const img = await loadImageFromDataURL(data.photo);
       const detection = await faceapi
@@ -2272,7 +2273,7 @@ function addDetectedPanel(student){
   // Check if already in list
   if(document.getElementById('dp-'+student.id)) return;
 
-  const db = loadFaceDB();
+  const db = (faces||{});
   const face = db[student.id];
   const av = face
     ? `<img src="${face.photo}" alt="${student.name}">`
