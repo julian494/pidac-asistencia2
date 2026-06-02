@@ -331,6 +331,10 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
 </style>
 </head>
 <body onload="onBodyLoad()">
+<div id="file-warn" style="display:none;background:rgba(255,170,0,.12);border-bottom:2px solid var(--warn);padding:12px 20px;text-align:center;font-size:13px;color:var(--warn);font-family:var(--font);position:fixed;top:0;left:0;right:0;z-index:10000">
+  ⚠️ <strong>Estás abriendo desde un archivo local.</strong> La cámara no funcionará. 
+  Sube el HTML a GitHub Pages y ábrelo desde la URL <code style="background:rgba(255,255,255,.1);padding:2px 6px;border-radius:4px">https://...</code>
+</div>
 
 <!-- SYNC BANNER -->
 <div id="sync-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:rgba(0,229,160,.08);border-bottom:1px solid rgba(0,229,160,.2);padding:10px 20px;align-items:center;gap:10px;font-size:12px;color:var(--accent);font-family:'Sora',sans-serif;backdrop-filter:blur(8px)">
@@ -1153,7 +1157,13 @@ function doLogout(){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!document.getElementById('login-screen').classList.contains('hidden'))doLogin();});
 
-function onBodyLoad(){ selectRole('admin'); }
+function onBodyLoad(){
+  selectRole('admin');
+  if(location.protocol==='file:'){
+    const w=document.getElementById('file-warn');
+    if(w) w.style.display='block';
+  }
+}
 
 // ═══════════════════════════════════════════════════════
 //  NAVIGATION
@@ -1491,19 +1501,38 @@ function onFaceStuChange(){
 }
 async function faceStartCam(){
   if(faceCamStream) return;
+  const st=document.getElementById('face-cam-st');
+  if(!navigator.mediaDevices?.getUserMedia){
+    st.className='cam-status error';
+    st.innerHTML=svgX+(location.protocol==='file:'?'Abre desde GitHub Pages, no desde archivo local.':'Navegador no soporta cámara. Usa Chrome.');
+    return;
+  }
   try{
-    faceCamStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false});
+    let stream;
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false});
+    }catch(e){
+      stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+    }
+    faceCamStream=stream;
     const v=document.getElementById('face-cam'); v.srcObject=faceCamStream;
+    await v.play().catch(()=>{});
     document.getElementById('face-cam-ph').style.display='none';
     document.getElementById('face-sf').style.display='block';
     document.getElementById('btn-face-start').style.display='none';
     document.getElementById('btn-face-capture').style.display='flex';
   }catch(e){
-    const st=document.getElementById('face-cam-st');
     st.className='cam-status error';
-    st.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>No se pudo acceder a la cámara.';
+    if(e.name==='NotAllowedError')
+      st.innerHTML=svgX+'Permiso denegado — clic en el candado 🔒 de la barra y permite la cámara.';
+    else if(location.protocol==='file:')
+      st.innerHTML=svgX+'La cámara no funciona en archivo local. Usa GitHub Pages.';
+    else
+      st.innerHTML=svgX+'No se pudo acceder a la cámara: '+e.message;
+    console.error('faceStartCam:',e);
   }
 }
+
 function faceStopCam(){
   if(faceCamStream){faceCamStream.getTracks().forEach(t=>t.stop());faceCamStream=null;}
   const v=document.getElementById('face-cam'); if(v) v.srcObject=null;
@@ -1742,19 +1771,33 @@ function regBack2(){
   document.getElementById('rs2').className='reg-step active';
 }
 async function regStartCam(){
-  if(regCamStream)return;
+  if(regCamStream) return;
+  const st=document.getElementById('reg-cam-st');
+  if(!navigator.mediaDevices?.getUserMedia){
+    st.className='cam-status error';
+    st.innerHTML='La cámara no está disponible. Puedes omitir este paso.';
+    return;
+  }
   try{
-    regCamStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+    let stream;
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+    }catch(e){
+      stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+    }
+    regCamStream=stream;
     const v=document.getElementById('reg-cam'); v.srcObject=regCamStream;
+    await v.play().catch(()=>{});
     document.getElementById('reg-cam-ph').style.display='none';
     document.getElementById('reg-sf').style.display='block';
     document.getElementById('btn-reg-cam').style.display='none';
     document.getElementById('btn-reg-capture').style.display='flex';
   }catch(e){
-    const st=document.getElementById('reg-cam-st');
-    st.className='cam-status error'; st.innerHTML='No se pudo acceder a la cámara.';
+    st.className='cam-status error';
+    st.innerHTML='No se pudo acceder a la cámara. Puedes registrar tu foto después.';
   }
 }
+
 function regStopCam(){
   if(regCamStream){regCamStream.getTracks().forEach(t=>t.stop());regCamStream=null;}
   const v=document.getElementById('reg-cam'); if(v) v.srcObject=null;
@@ -1802,19 +1845,36 @@ async function regFinish(){
 // ═══════════════════════════════════════════════════════
 let spCamStream=null, spPhoto=null;
 async function spStartCam(){
-  if(spCamStream)return;
+  if(spCamStream) return;
+  const st=document.getElementById('sp-cam-st');
+  if(!navigator.mediaDevices?.getUserMedia){
+    st.className='cam-status error';
+    st.innerHTML=svgX+(location.protocol==='file:'?'Abre desde GitHub Pages para usar la cámara.':'Navegador no compatible. Usa Chrome.');
+    return;
+  }
   try{
-    spCamStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+    let stream;
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+    }catch(e){
+      stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+    }
+    spCamStream=stream;
     const v=document.getElementById('sp-cam'); v.srcObject=spCamStream;
+    await v.play().catch(()=>{});
     document.getElementById('sp-cam-ph').style.display='none';
     document.getElementById('sp-sf').style.display='block';
     document.getElementById('btn-sp-start').style.display='none';
     document.getElementById('btn-sp-capture').style.display='flex';
   }catch(e){
-    const st=document.getElementById('sp-cam-st');
-    st.className='cam-status error'; st.innerHTML='No se pudo acceder a la cámara.';
+    st.className='cam-status error';
+    if(e.name==='NotAllowedError')
+      st.innerHTML=svgX+'Permiso denegado — toca el candado 🔒 y permite la cámara.';
+    else
+      st.innerHTML=svgX+'No se pudo iniciar la cámara: '+e.message;
   }
 }
+
 function spStopCam(){
   if(spCamStream){spCamStream.getTracks().forEach(t=>t.stop());spCamStream=null;}
   const v=document.getElementById('sp-cam'); if(v) v.srcObject=null;
@@ -1969,31 +2029,71 @@ function closeCamModal(){
 }
 async function startScan(){
   const loadEl=document.getElementById('model-loading');
+  const st=document.getElementById('cam-st');
+
+  // Check if camera API exists
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    st.className='cam-status error';
+    const isFile=location.protocol==='file:';
+    st.innerHTML=svgX+(isFile
+      ?'<strong>Abre la app desde GitHub Pages</strong>, no desde un archivo local. La cámara no funciona en file://'
+      :'Tu navegador no soporta cámara. Usa Chrome o Firefox actualizado.');
+    return;
+  }
+
   if(!modelsLoaded) loadEl.classList.remove('hidden');
+
   try{
-    const [stream]=await Promise.all([
-      navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false}),
-      loadModels()
-    ]);
+    // Try with ideal constraints first, fall back to basic
+    let stream;
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({
+        video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false
+      });
+    }catch(e1){
+      // Fallback: just ask for any video
+      stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+    }
+
+    await loadModels();
     await buildDescriptors();
     loadEl.classList.add('hidden');
     cameraStream=stream;
     const v=document.getElementById('cam-feed');
     v.srcObject=cameraStream;
-    await new Promise(r=>{v.onloadedmetadata=r;}); v.play();
+    await new Promise((res,rej)=>{
+      v.onloadedmetadata=res;
+      v.onerror=rej;
+      setTimeout(res,3000); // timeout fallback
+    });
+    await v.play().catch(()=>{});
+
     document.getElementById('cam-ph').style.display='none';
     document.getElementById('cam-sf').style.display='block';
     scanActive=true;
+
     const btn=document.getElementById('btn-cam-start');
     btn.innerHTML=svgStop+' Detener'; btn.onclick=stopCam; btn.style.background='var(--danger)';
-    const st=document.getElementById('cam-st');
     st.className='cam-status info';
-    st.innerHTML=faceMatcher?svgInfo+'Escaneando rostros…':svgInfo+'Cámara activa — <strong>registra rostros primero</strong>';
+    st.innerHTML=faceMatcher?svgInfo+'Escaneando rostros…':svgInfo+'Cámara activa. <strong>Registra rostros primero</strong> para poder reconocer.';
     runFaceLoop();
+
   }catch(err){
-    document.getElementById('model-loading').classList.add('hidden');
-    const st=document.getElementById('cam-st');
-    st.className='cam-status error'; st.innerHTML=svgX+'No se pudo acceder a la cámara.';
+    loadEl.classList.add('hidden');
+    st.className='cam-status error';
+    let msg='No se pudo acceder a la cámara. ';
+    if(err.name==='NotAllowedError'||err.name==='PermissionDeniedError')
+      msg+='<strong>Permiso denegado</strong> — ve a la barra del navegador, clic en el candado 🔒 y permite la cámara.';
+    else if(err.name==='NotFoundError'||err.name==='DevicesNotFoundError')
+      msg+='No se encontró ninguna cámara en este dispositivo.';
+    else if(err.name==='NotReadableError'||err.name==='TrackStartError')
+      msg+='La cámara está siendo usada por otra app. Ciérrala e intenta de nuevo.';
+    else if(location.protocol==='file:')
+      msg+='<strong>Abre desde GitHub Pages</strong>, no desde un archivo local (file://).';
+    else
+      msg+=err.message||err.name||'Error desconocido.';
+    st.innerHTML=svgX+msg;
+    console.error('Camera error:',err);
   }
 }
 
