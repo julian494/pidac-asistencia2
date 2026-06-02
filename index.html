@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0053)file:///C:/Users/prueba/Downloads/PIDAC_Firebase.html -->
+<html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>PIDAC — Sistema de Asistencia Facial</title>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="./index_files/css2" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -515,37 +515,177 @@ canvas.face-overlay{
   .db-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
   .report-grid{grid-template-columns:1fr}
 }
+
+/* ── GRADE TABS ── */
+.grade-tabs-wrap{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem;align-items:center}
+.grade-tab{padding:8px 16px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;white-space:nowrap;font-family:var(--font)}
+.grade-tab:hover{border-color:rgba(0,229,160,.3);color:var(--text)}
+.grade-tab.active{border-color:var(--accent);background:rgba(0,229,160,.08);color:var(--accent)}
+.grade-tab .gt-count{background:rgba(0,229,160,.15);color:var(--accent);font-size:9px;padding:1px 7px;border-radius:20px;font-family:var(--mono)}
+.grade-tab.active .gt-count{background:var(--accent);color:#07101F}
+.grade-tab-add{border-style:dashed;color:var(--muted)}
+.grade-tab-add:hover{border-color:rgba(0,229,160,.5);color:var(--accent)}
+
+/* ── GRADE HEADER BAR ── */
+.grade-hdr{display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 16px}
+.grade-hdr-name{font-size:14px;font-weight:700;flex:1}
+.grade-hdr-count{font-size:11px;color:var(--muted)}
+.btn-icon{width:32px;height:32px;border-radius:9px;border:1px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .2s;flex-shrink:0}
+.btn-icon:hover{border-color:rgba(0,229,160,.4);color:var(--accent)}
+.btn-icon.danger:hover{border-color:rgba(255,61,90,.4);color:var(--danger)}
+.btn-icon svg{width:14px;height:14px}
+
+/* ── DB TOOLBAR EXTRA ── */
+.btn-primary-purple{padding:11px 16px;background:var(--purple);border:none;border-radius:12px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:7px;transition:transform .15s,opacity .15s}
+.btn-primary-purple:active{transform:scale(.97)}
+.btn-primary-purple svg{width:15px;height:15px}
+
+/* ── FACE CARD EXTRA BUTTONS ── */
+.fc-btn-edit{background:rgba(0,184,255,.08);color:var(--accent2);border-color:rgba(0,184,255,.3)}
+.fc-btn-edit:hover{opacity:.7}
+.fc-btn-move{background:rgba(168,85,247,.08);color:var(--purple);border-color:rgba(168,85,247,.3)}
+.fc-btn-move:hover{opacity:.7}
+.face-card-grade{font-size:10px;color:var(--accent2);margin-top:1px}
+
+/* ── FORM MODAL ── */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-field{margin-bottom:.875rem}
+.form-field label{font-size:10px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;display:block;margin-bottom:6px}
+.form-field input,.form-field select,.form-field textarea{width:100%;padding:11px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:11px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:border-color .2s}
+.form-field input:focus,.form-field select:focus{border-color:rgba(0,229,160,.4)}
+.form-err{background:rgba(255,61,90,.08);border:1px solid rgba(255,61,90,.25);border-radius:10px;padding:9px 13px;font-size:12px;color:var(--danger);margin-bottom:.75rem}
+
+/* ── MOVE GRADE GRID ── */
+.grade-pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:8px}
+.grade-pick-item{padding:10px 8px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:12px;font-weight:600;text-align:center;transition:all .2s;font-family:var(--font)}
+.grade-pick-item:hover{border-color:rgba(0,229,160,.4);color:var(--text)}
+.grade-pick-item.selected{border-color:var(--accent);background:rgba(0,229,160,.1);color:var(--accent)}
+
+@media(max-width:700px){.form-row{grid-template-columns:1fr}}
+
+/* ── ROLE SELECTOR ── */
+.role-selector{display:flex;gap:8px;margin-bottom:1.5rem}
+.role-card{flex:1;padding:12px 6px 10px;border-radius:16px;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:var(--font);text-align:center;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:6px}
+.role-card svg{width:22px;height:22px}
+.role-card span{font-size:11px;font-weight:700;letter-spacing:.3px}
+.role-card small{font-size:9px;letter-spacing:.4px;text-transform:uppercase;opacity:.7}
+.role-card:hover{border-color:rgba(0,229,160,.35);color:var(--text)}
+.role-card.sel-admin{border-color:var(--purple);background:rgba(168,85,247,.08);color:var(--purple)}
+.role-card.sel-teacher{border-color:var(--accent2);background:rgba(0,184,255,.08);color:var(--accent2)}
+.role-card.sel-student{border-color:var(--accent);background:rgba(0,229,160,.08);color:var(--accent)}
+
+/* ── ROLE BADGE in sidebar ── */
+.role-pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
+.rp-admin{background:rgba(168,85,247,.15);color:var(--purple);border:1px solid rgba(168,85,247,.3)}
+.rp-teacher{background:rgba(0,184,255,.15);color:var(--accent2);border:1px solid rgba(0,184,255,.3)}
+.rp-student{background:rgba(0,229,160,.15);color:var(--accent);border:1px solid rgba(0,229,160,.3)}
+
+/* ── STUDENT PORTAL ── */
+#student-portal{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;position:relative;z-index:1}
+.sp-box{width:100%;max-width:480px;background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:2rem;animation:fadeUp .35s ease;box-shadow:0 24px 64px rgba(0,0,0,.4)}
+.sp-header{text-align:center;margin-bottom:1.5rem}
+.sp-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,rgba(0,229,160,.15),rgba(0,184,255,.1));border:2px solid rgba(0,229,160,.4);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--accent);margin:0 auto 12px;overflow:hidden}
+.sp-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.sp-name{font-size:20px;font-weight:700;margin-bottom:3px}
+.sp-grade{font-size:11px;color:var(--muted);letter-spacing:.5px}
+.sp-status{display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:1.25rem}
+.sp-status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.sp-status-dot.present{background:var(--accent)}
+.sp-status-dot.absent{background:var(--danger)}
+.sp-status-dot.late{background:var(--warn)}
+.sp-status-label{font-size:12px;color:var(--muted)}
+.sp-status-val{font-size:14px;font-weight:600}
+.sp-section-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:.875rem;display:flex;align-items:center;gap:7px}
+.sp-section-title svg{width:14px;height:14px}
+
+/* ── ACCOUNTS VIEW ── */
+.acc-section{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:1.25rem}
+.acc-section-hdr{padding:.875rem 1.25rem;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.acc-section-hdr h4{font-size:12px;font-weight:700;display:flex;align-items:center;gap:7px;color:var(--text)}
+.acc-section-hdr h4 svg{width:15px;height:15px}
+.acc-row{display:flex;align-items:center;gap:11px;padding:11px 1.25rem;border-bottom:1px solid rgba(26,46,74,.4)}
+.acc-row:last-child{border-bottom:none}
+.acc-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.acc-info{flex:1;min-width:0}
+.acc-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acc-user{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.acc-del{width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,61,90,.25);background:rgba(255,61,90,.06);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--danger);transition:opacity .2s;flex-shrink:0}
+.acc-del:hover{opacity:.7}
+.acc-del svg{width:13px;height:13px}
+.acc-empty{padding:1.5rem;text-align:center;font-size:12px;color:var(--muted)}
+
+/* ── NAV admin-only hiding ── */
+.nav-admin-only{display:none}
+
+/* hide/show helpers */
+.admin-hidden{display:none!important}
+
+/* ── BACKUP BAR ── */
+.backup-bar{display:flex;gap:8px;align-items:center;background:rgba(255,170,0,.06);border:1px solid rgba(255,170,0,.2);border-radius:14px;padding:10px 16px;margin-bottom:1.25rem;flex-wrap:wrap}
+.backup-bar span{font-size:12px;color:var(--warn);flex:1;min-width:160px}
+.btn-export{padding:8px 14px;background:rgba(255,170,0,.12);border:1px solid rgba(255,170,0,.35);border-radius:10px;color:var(--warn);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px;transition:opacity .2s;white-space:nowrap}
+.btn-export:hover{opacity:.75}
+.btn-export svg{width:14px;height:14px}
+.btn-import{padding:8px 14px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);border-radius:10px;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px;transition:opacity .2s;white-space:nowrap}
+.btn-import:hover{opacity:.75}
+.btn-import svg{width:14px;height:14px}
 </style>
 </head>
 <body>
 
+<!-- Sync banner -->
+<div id="sync-banner" style="display: none; position: fixed; top: 0px; left: 0px; right: 0px; z-index: 9999; background: rgba(0, 184, 255, 0.12); border-bottom: 1px solid rgba(0, 184, 255, 0.3); padding: 10px 20px; align-items: center; gap: 10px; font-size: 12px; color: rgb(0, 184, 255); font-family: Sora, sans-serif; backdrop-filter: blur(8px);">
+  <div style="width:14px;height:14px;border:2px solid rgba(0,184,255,.3);border-top-color:#00B8FF;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0"></div>
+  Sincronizando con Firebase…
+</div>
 <!-- ═══ LOGIN ═══ -->
 <div id="login-screen">
   <div class="login-glow"></div>
   <div class="login-box">
     <div class="login-logo">
       <div class="login-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="5"></circle><path d="M3 21v-1a9 9 0 0118 0v1"></path></svg>
       </div>
       <div class="login-title">PIDAC</div>
-      <div class="login-sub">Sistema de Asistencia · CASD 11-6</div>
+      <div class="login-sub">Sistema de Asistencia Escolar</div>
     </div>
+
+    <!-- Selector de rol -->
+    <div class="role-selector" id="role-selector">
+      <div class="role-card sel-admin" id="rc-admin" onclick="selectRole(&#39;admin&#39;)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        <span>Admin</span>
+        <small>Control total</small>
+      </div>
+      <div class="role-card" id="rc-teacher" onclick="selectRole(&#39;teacher&#39;)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"></path></svg>
+        <span>Profesor</span>
+        <small>Asistencia</small>
+      </div>
+      <div class="role-card" id="rc-student" onclick="selectRole(&#39;student&#39;)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+        <span>Estudiante</span>
+        <small>Mi perfil</small>
+      </div>
+    </div>
+
     <div class="field-group">
       <label>Usuario</label>
       <div class="inp-wrap">
-        <svg class="inp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <svg class="inp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path></svg>
         <input id="l-user" type="text" placeholder="Ingresa tu usuario" autocomplete="off">
       </div>
     </div>
     <div class="field-group">
       <label>Contraseña</label>
       <div class="inp-wrap">
-        <svg class="inp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        <svg class="inp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0110 0v4"></path></svg>
         <input id="l-pass" type="password" placeholder="Ingresa tu contraseña">
       </div>
     </div>
     <button class="login-btn" onclick="doLogin()">Iniciar sesión</button>
     <div id="login-err" class="login-err hidden">Usuario o contraseña incorrectos</div>
+    <p style="text-align:center;font-size:10px;color:var(--muted);margin-top:1rem">v3.0 · PIDAC Sistema Escolar</p>
   </div>
 </div>
 
@@ -556,36 +696,43 @@ canvas.face-overlay{
   <div class="sidebar">
     <div class="sidebar-logo">
       <div class="slc">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"></path></svg>
       </div>
       <span>PIDAC</span>
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section">Principal</div>
-      <div class="nav-item active" onclick="showView('dashboard',this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <div class="nav-item active" onclick="showView(&#39;dashboard&#39;,this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>
         Dashboard
       </div>
-      <div class="nav-item" onclick="showView('attendance',this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      <div class="nav-item" onclick="showView(&#39;attendance&#39;,this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"></path></svg>
         Asistencia
       </div>
       <div class="nav-section">Datos</div>
-      <div class="nav-item" onclick="showView('database',this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-        Base de Datos
+      <div class="nav-item" id="nav-database" onclick="showView(&#39;database&#39;,this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+        Estudiantes
+      </div>
+      <div class="nav-item nav-admin-only" id="nav-accounts" onclick="showView(&#39;accounts&#39;,this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        Cuentas
       </div>
       <div class="nav-section">Reportes</div>
-      <div class="nav-item" onclick="showView('reports',this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83M22 12A10 10 0 0012 2v10z"/></svg>
+      <div class="nav-item" onclick="showView(&#39;reports&#39;,this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83M22 12A10 10 0 0012 2v10z"></path></svg>
         Estadísticas
       </div>
     </nav>
     <div class="sidebar-user">
-      <div class="uav">PA</div>
-      <div><div class="uname">PIDAC_ADMIN</div><div class="urole">Administrador</div></div>
+      <div class="uav" id="sb-av">PA</div>
+      <div style="min-width:0;flex:1">
+        <div class="uname" id="sb-name">Admin</div>
+        <div class="role-pill rp-admin" id="sb-role-pill">Admin</div>
+      </div>
       <button class="logout-btn" onclick="doLogout()" title="Cerrar sesión">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
       </button>
     </div>
   </div>
@@ -599,12 +746,25 @@ canvas.face-overlay{
 
     <!-- ─── DASHBOARD ─── -->
     <div id="view-dashboard" class="view active">
+      <div class="backup-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--warn);flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <span>Los datos se guardan en este navegador. <strong>Haz una copia de seguridad</strong> antes de cambiar el HTML o limpiar caché.</span>
+        <button class="btn-export" onclick="exportBackup()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Exportar copia
+        </button>
+        <button class="btn-import" onclick="document.getElementById(&#39;import-file-inp&#39;).click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          Importar copia
+        </button>
+        <input type="file" id="import-file-inp" accept=".json" style="display:none" onchange="importBackup(event)">
+      </div>
       <div class="stats-grid">
-        <div class="stat-card sc-g"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div class="sc-val" id="stat-present">0</div><div class="sc-lbl">Presentes</div></div>
-        <div class="stat-card sc-r"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div class="sc-val" id="stat-absent">0</div><div class="sc-lbl">Ausentes</div></div>
-        <div class="stat-card sc-w"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="sc-val" id="stat-late">0</div><div class="sc-lbl">Tardanzas</div></div>
-        <div class="stat-card sc-b"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83M22 12A10 10 0 0012 2v10z"/></svg></div><div class="sc-val" id="stat-pct">0%</div><div class="sc-lbl">% Asistencia</div></div>
-        <div class="stat-card sc-p"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M3 21v-1a9 9 0 0118 0v1"/></svg></div><div class="sc-val" id="stat-db">0</div><div class="sc-lbl">Rostros registrados</div></div>
+        <div class="stat-card sc-g"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div><div class="sc-val" id="stat-present">0</div><div class="sc-lbl">Presentes</div></div>
+        <div class="stat-card sc-r"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg></div><div class="sc-val" id="stat-absent">0</div><div class="sc-lbl">Ausentes</div></div>
+        <div class="stat-card sc-w"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div><div class="sc-val" id="stat-late">0</div><div class="sc-lbl">Tardanzas</div></div>
+        <div class="stat-card sc-b"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83M22 12A10 10 0 0012 2v10z"></path></svg></div><div class="sc-val" id="stat-pct">0%</div><div class="sc-lbl">% Asistencia</div></div>
+        <div class="stat-card sc-p"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"></circle><path d="M3 21v-1a9 9 0 0118 0v1"></path></svg></div><div class="sc-val" id="stat-db">0</div><div class="sc-lbl">Rostros registrados</div></div>
       </div>
       <div class="section-hdr"><h3>Distribución de asistencia</h3><span class="badge-sm" id="chart-date">Hoy</span></div>
       <div class="chart-container">
@@ -616,7 +776,7 @@ canvas.face-overlay{
           <div class="leg-row"><div class="leg-dot" style="background:var(--warn)"></div><span class="leg-label">Tardanzas</span><span class="leg-val" id="leg-l">0</span><span class="leg-pct" id="leg-lp">(0%)</span></div>
           <div style="margin-top:1.5rem">
             <button class="btn-scan" onclick="openCameraModal()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
               Tomar asistencia
             </button>
           </div>
@@ -628,17 +788,17 @@ canvas.face-overlay{
     <div id="view-attendance" class="view">
       <div class="attendance-toolbar">
         <div class="att-search-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           <input class="att-search" id="search-input" type="text" placeholder="Buscar estudiante…" oninput="filterStudents()">
         </div>
-        <button class="btn-secondary" onclick="markAll('present')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Todos presentes
+        <button class="btn-secondary" onclick="markAll(&#39;present&#39;)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>Todos presentes
         </button>
-        <button class="btn-secondary" style="color:var(--danger)" onclick="markAll('absent')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Todos ausentes
+        <button class="btn-secondary" style="color:var(--danger)" onclick="markAll(&#39;absent&#39;)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>Todos ausentes
         </button>
         <button class="btn-scan" onclick="openCameraModal()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           Escanear rostro
         </button>
       </div>
@@ -658,23 +818,47 @@ canvas.face-overlay{
     <div id="view-database" class="view">
       <div class="db-toolbar">
         <button class="btn-primary-db" onclick="openDbModal()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
           Registrar rostro
         </button>
+        <button class="btn-primary-db" style="background:var(--accent2)" onclick="openAddStudentModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
+          Agregar persona
+        </button>
+        <button class="btn-primary-purple" onclick="openAddGradeModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path><line x1="12" y1="17" x2="12" y2="22"></line></svg>
+          Agregar grado
+        </button>
         <button class="btn-danger-outline" onclick="clearAllFaces()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
-          Limpiar todo
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"></path></svg>
+          Limpiar fotos
         </button>
       </div>
+
+      <!-- Grade tabs -->
+      <div class="grade-tabs-wrap" id="grade-tabs"></div>
+
+      <!-- Grade header bar -->
+      <div class="grade-hdr" id="grade-hdr">
+        <span class="grade-hdr-name" id="grade-hdr-name">Todos los grados</span>
+        <span class="grade-hdr-count" id="grade-hdr-count"></span>
+        <button class="btn-icon" id="btn-edit-grade" onclick="openEditGradeModal()" title="Editar grado" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"></path></svg>
+        </button>
+        <button class="btn-icon danger" id="btn-del-grade" onclick="deleteCurrentGrade()" title="Eliminar grado" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"></path></svg>
+        </button>
+      </div>
+
       <div class="db-stats-bar">
-        <div class="db-stat-chip ds-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Total: <strong id="db-total">0</strong></span></div>
-        <div class="db-stat-chip ds-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Con foto: <strong id="db-with-photo">0</strong></span></div>
-        <div class="db-stat-chip ds-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/><path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0110 10c0 5.5-4.5 10-10 10A10 10 0 012 12z"/></svg><span>Sin foto: <strong id="db-without-photo">0</strong></span></div>
+        <div class="db-stat-chip ds-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"></path></svg><span>Total: <strong id="db-total">0</strong></span></div>
+        <div class="db-stat-chip ds-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"></path><circle cx="12" cy="13" r="4"></circle></svg><span>Con foto: <strong id="db-with-photo">0</strong></span></div>
+        <div class="db-stat-chip ds-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 16s-1.5-2-4-2-4 2-4 2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line><circle cx="12" cy="12" r="10"></circle></svg><span>Sin foto: <strong id="db-without-photo">0</strong></span></div>
       </div>
       <div class="db-grid" id="db-grid"></div>
       <div class="empty-state hidden" id="db-empty">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/><circle cx="12" cy="12" r="10"/></svg>
-        <p>No hay estudiantes registrados</p>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 16s-1.5-2-4-2-4 2-4 2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line><circle cx="12" cy="12" r="10"></circle></svg>
+        <p>No hay personas en este grado</p>
       </div>
     </div>
 
@@ -703,19 +887,19 @@ canvas.face-overlay{
   <div class="modal">
     <div class="modal-header">
       <h3>
-        <svg style="width:16px;height:16px;vertical-align:-2px;margin-right:7px;color:var(--accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg style="width:16px;height:16px;vertical-align:-2px;margin-right:7px;color:var(--accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
         Reconocimiento Facial Automático
       </h3>
       <button class="modal-close" onclick="closeCameraModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
     </div>
 
     <div class="cam-box" id="cam-box" style="aspect-ratio:4/3">
-      <video id="camera-feed" autoplay playsinline muted></video>
+      <video id="camera-feed" autoplay="" playsinline="" muted=""></video>
       <canvas id="face-overlay" class="face-overlay"></canvas>
       <div class="cam-placeholder" id="cam-placeholder">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
         <p>Presiona "Iniciar cámara"<br>para comenzar el escaneo</p>
       </div>
       <div class="scan-frame-static" id="scan-frame-static">
@@ -738,7 +922,7 @@ canvas.face-overlay{
 
     <div class="modal-actions">
       <button class="btn-modal-primary" id="btn-cam-action" onclick="startAutoScan()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
         Iniciar cámara
       </button>
       <button class="btn-modal-cancel" onclick="closeCameraModal()">Cancelar</button>
@@ -751,23 +935,23 @@ canvas.face-overlay{
   <div class="modal">
     <div class="modal-header">
       <h3>
-        <svg style="width:16px;height:16px;vertical-align:-2px;margin-right:7px;color:var(--accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+        <svg style="width:16px;height:16px;vertical-align:-2px;margin-right:7px;color:var(--accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
         Registrar Rostro
       </h3>
       <button class="modal-close" onclick="closeDbModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
     </div>
-    <div class="db-modal-body">
+    
       <div class="db-field">
         <label>Estudiante</label>
         <select id="db-student-select" onchange="onDbStudentChange()"></select>
       </div>
 
       <div class="cam-box" id="db-cam-box" style="aspect-ratio:4/3">
-        <video id="db-camera-feed" autoplay playsinline muted style="transform:scaleX(-1)"></video>
+        <video id="db-camera-feed" autoplay="" playsinline="" muted="" style="transform:scaleX(-1)"></video>
         <div class="cam-placeholder" id="db-cam-placeholder">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
           <p>Presiona "Iniciar cámara"<br>para capturar el rostro</p>
         </div>
         <div class="scan-frame-static" id="db-scan-frame" style="display:none">
@@ -780,23 +964,22 @@ canvas.face-overlay{
 
       <div class="preview-row" id="db-preview-row" style="display:none">
         <div class="photo-preview" id="db-photo-preview">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path></svg>
         </div>
         <div class="preview-info" id="db-preview-info">Foto capturada lista para guardar.</div>
       </div>
       <div class="cam-status-bar" id="db-modal-status"></div>
-    </div>
     <div class="modal-actions">
       <button class="btn-modal-primary" id="btn-db-cam" onclick="toggleDbCamera()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
         Iniciar cámara
       </button>
       <button class="btn-modal-primary blue" id="btn-db-capture" onclick="captureDbPhoto()" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
         Capturar foto
       </button>
       <button class="btn-modal-primary" id="btn-db-save" onclick="saveDbFace()" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
         Guardar
       </button>
       <button class="btn-modal-cancel" onclick="closeDbModal()">Cancelar</button>
@@ -804,8 +987,353 @@ canvas.face-overlay{
   </div>
 </div>
 
+
+<!-- ═══ MODAL: AGREGAR / EDITAR PERSONA ═══ -->
+<div id="add-student-modal" class="modal-overlay hidden">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h3 id="add-stu-title">
+        <svg style="width:16px;height:16px;color:var(--accent2)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
+        Agregar persona
+      </h3>
+      <button class="modal-close" onclick="closeAddStudentModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <input type="hidden" id="edit-stu-id">
+    <div id="add-stu-err" class="form-err hidden">Completa todos los campos requeridos.</div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Nombres *</label>
+        <input id="stu-firstname" type="text" placeholder="Ej: Juan David">
+      </div>
+      <div class="form-field">
+        <label>Apellidos *</label>
+        <input id="stu-lastname" type="text" placeholder="Ej: García López">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>N° de lista *</label>
+        <input id="stu-number" type="number" min="1" placeholder="Ej: 15">
+      </div>
+      <div class="form-field">
+        <label>Grado</label>
+        <select id="stu-grade-select"></select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-primary blue" onclick="saveStudent()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>
+        Guardar
+      </button>
+      <button class="btn-modal-cancel" onclick="closeAddStudentModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: AGREGAR / EDITAR GRADO ═══ -->
+<div id="add-grade-modal" class="modal-overlay hidden">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3 id="grade-modal-title">
+        <svg style="width:16px;height:16px;color:var(--purple)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+        Agregar grado
+      </h3>
+      <button class="modal-close" onclick="closeAddGradeModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <input type="hidden" id="edit-grade-id">
+    <div id="add-grade-err" class="form-err hidden">El nombre del grado es requerido.</div>
+    <div class="form-field">
+      <label>Nombre del grado *</label>
+      <input id="grade-name-inp" type="text" placeholder="Ej: 11-6, 10-A, Décimo B">
+    </div>
+    <div class="form-field">
+      <label>Descripción (opcional)</label>
+      <input id="grade-desc-inp" type="text" placeholder="Ej: Jornada mañana">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-primary" style="background:var(--purple)" onclick="saveGrade()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>
+        Guardar grado
+      </button>
+      <button class="btn-modal-cancel" onclick="closeAddGradeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: MOVER A OTRO GRADO ═══ -->
+<div id="move-student-modal" class="modal-overlay hidden">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>
+        <svg style="width:16px;height:16px;color:var(--purple)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"></polyline><polyline points="9 5 12 2 15 5"></polyline><line x1="2" y1="12" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="22"></line></svg>
+        Mover de grado
+      </h3>
+      <button class="modal-close" onclick="closeMoveModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <input type="hidden" id="move-stu-id">
+    <p id="move-stu-name" style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:1rem"></p>
+    <div class="form-field">
+      <label>Selecciona el grado destino</label>
+      <div class="grade-pick-grid" id="move-grade-grid"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-primary" style="background:var(--purple)" onclick="confirmMoveStudent()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"></polyline><polyline points="9 5 12 2 15 5"></polyline><line x1="2" y1="12" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="22"></line></svg>
+        Mover
+      </button>
+      <button class="btn-modal-cancel" onclick="closeMoveModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PORTAL ESTUDIANTE ═══ -->
+<div id="student-portal" class="hidden">
+  <div class="login-glow"></div>
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;position:relative;z-index:1">
+    <div class="sp-box">
+      <div class="sp-header">
+        <div class="sp-avatar" id="sp-av">?</div>
+        <div class="sp-name" id="sp-name-lbl">Estudiante</div>
+        <div class="sp-grade" id="sp-grade-lbl">—</div>
+      </div>
+
+      <!-- Estado de asistencia -->
+      <div class="sp-status" id="sp-status-row">
+        <div class="sp-status-dot absent" id="sp-dot"></div>
+        <div>
+          <div class="sp-status-label">Asistencia hoy</div>
+          <div class="sp-status-val" id="sp-status-val">Ausente</div>
+        </div>
+      </div>
+
+      <!-- Registro de rostro -->
+      <div class="sp-section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+        Registrar mi rostro
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:1rem;line-height:1.6">Captura tu foto para que el sistema pueda reconocerte automáticamente en la lista de asistencia.</p>
+
+      <div class="cam-box" id="sp-cam-box" style="aspect-ratio:4/3">
+        <video id="sp-camera-feed" autoplay="" playsinline="" muted="" style="transform:scaleX(-1);width:100%;display:block;object-fit:cover"></video>
+        <div class="cam-placeholder" id="sp-cam-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+          <p>Presiona el botón para iniciar</p>
+        </div>
+        <div class="scan-frame-static" id="sp-scan-frame" style="display:none">
+          <div class="sf-corner sf-tl"></div><div class="sf-corner sf-tr"></div>
+          <div class="sf-corner sf-bl"></div><div class="sf-corner sf-br"></div>
+          <div class="sf-beam"></div>
+        </div>
+      </div>
+      <canvas id="sp-capture-canvas" style="display:none"></canvas>
+
+      <div class="preview-row" id="sp-preview-row" style="display:none;margin-top:.875rem">
+        <div class="photo-preview" id="sp-photo-preview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path></svg>
+        </div>
+        <div class="preview-info">Foto capturada. Guarda para registrarla.</div>
+      </div>
+      <div class="cam-status-bar" id="sp-cam-status"></div>
+
+      <div class="modal-actions" style="margin-top:1rem">
+        <button class="btn-modal-primary" id="btn-sp-cam" onclick="spToggleCam()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+          Iniciar cámara
+        </button>
+        <button class="btn-modal-primary blue" id="btn-sp-capture" onclick="spCapture()" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+          Capturar
+        </button>
+        <button class="btn-modal-primary" id="btn-sp-save" onclick="spSave()" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>
+          Guardar rostro
+        </button>
+        <button class="btn-modal-cancel" onclick="doLogout()">Cerrar sesión</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: CUENTAS (sección dentro de app-shell) ═══ -->
+<!-- view-accounts se agrega dinámicamente via JS -->
+
+<!-- ═══ MODAL: CREAR CUENTA ═══ -->
+<div id="new-account-modal" class="modal-overlay hidden">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3 id="acc-modal-title">
+        <svg style="width:16px;height:16px;color:var(--purple)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        Nueva cuenta
+      </h3>
+      <button class="modal-close" onclick="closeAccountModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div id="acc-modal-err" class="form-err hidden">Completa todos los campos.</div>
+    <input type="hidden" id="acc-modal-role">
+    <div class="form-row">
+      <div class="form-field">
+        <label>Nombre completo *</label>
+        <input id="acc-fullname" type="text" placeholder="Ej: Carlos Mora">
+      </div>
+      <div class="form-field">
+        <label>Usuario *</label>
+        <input id="acc-username" type="text" placeholder="Ej: carlos.m" autocomplete="off">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Contraseña *</label>
+        <input id="acc-password" type="password" placeholder="Mín. 4 caracteres">
+      </div>
+      <div class="form-field" id="acc-grade-wrap">
+        <label>Grado asignado</label>
+        <select id="acc-grade-sel"></select>
+      </div>
+    </div>
+    <!-- Only for student accounts -->
+    <div id="acc-student-wrap" style="display:none">
+      <div class="form-field">
+        <label>Vincular con estudiante</label>
+        <select id="acc-student-sel"><option value="">— Sin vincular —</option></select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-primary" style="background:var(--purple)" onclick="saveAccount()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>
+        Crear cuenta
+      </button>
+      <button class="btn-modal-cancel" onclick="closeAccountModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FIREBASE MODULE ═══ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD4AyC7VPKdVRoGRBYur4Jh1PgxP3VlvmE",
+  authDomain: "pidac-asistencia.firebaseapp.com",
+  projectId: "pidac-asistencia",
+  storageBucket: "pidac-asistencia.firebasestorage.app",
+  messagingSenderId: "1045315448252",
+  appId: "1:1045315448252:web:9cd458758332c1227f0fb9"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db    = getFirestore(fbApp);
+
+window.fbSaveGrade    = async (g)  => setDoc(doc(db,'grades',g.id), g);
+window.fbDeleteGrade  = async (id) => deleteDoc(doc(db,'grades',id));
+window.fbLoadGrades   = async ()   => { const s=await getDocs(collection(db,'grades')); return s.docs.map(d=>d.data()); };
+
+window.fbSaveStudent  = async (s)  => setDoc(doc(db,'students',s.id), s);
+window.fbDeleteStudent= async (id) => deleteDoc(doc(db,'students',id));
+window.fbLoadStudents = async ()   => { const s=await getDocs(collection(db,'students')); return s.docs.map(d=>d.data()); };
+window.fbUpdateStudentStatus = async (id,status) => setDoc(doc(db,'students',id),{status},{merge:true});
+
+window.fbSaveFace     = async (id,photo) => setDoc(doc(db,'faces',id),{studentId:id,photo,registeredAt:new Date().toISOString()});
+window.fbDeleteFace   = async (id) => deleteDoc(doc(db,'faces',id));
+window.fbLoadFaces    = async ()   => { const s=await getDocs(collection(db,'faces')); const r={}; s.docs.forEach(d=>r[d.id]=d.data()); return r; };
+
+window.fbSaveAccount  = async (a)  => setDoc(doc(db,'accounts',a.id), a);
+window.fbDeleteAccount= async (id) => deleteDoc(doc(db,'accounts',id));
+window.fbLoadAccounts = async ()   => { const s=await getDocs(collection(db,'accounts')); return s.docs.map(d=>d.data()); };
+
+async function syncFromFirebase(){
+  try{
+    const b=document.getElementById('sync-banner');
+    if(b) b.style.display='flex';
+    const [grades,students,faces,accounts]=await Promise.all([
+      window.fbLoadGrades(), window.fbLoadStudents(),
+      window.fbLoadFaces(),  window.fbLoadAccounts()
+    ]);
+    if(grades.length)    localStorage.setItem('pidac_grades_v3',   JSON.stringify(grades));
+    if(students.length)  localStorage.setItem('pidac_students_v3', JSON.stringify(students));
+    if(Object.keys(faces).length) localStorage.setItem('pidac_face_db_v2', JSON.stringify(faces));
+    if(accounts.length)  localStorage.setItem('pidac_accounts_v3', JSON.stringify(accounts));
+    if(b) b.style.display='none';
+    window._firebaseLoaded=true;
+    if(window.currentUser && typeof window.refreshAfterSync==='function') window.refreshAfterSync();
+  }catch(e){
+    console.warn('Firebase sync:',e);
+    const b=document.getElementById('sync-banner');
+    if(b) b.style.display='none';
+    window._firebaseLoaded=true;
+  }
+}
+syncFromFirebase();
+</script>
+
 <!-- ═══ FACE-API.JS ═══ -->
-<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script src="./index_files/face-api.min.js.descarga">
+// ══════════════════════════════════════════════════
+//  BACKUP — EXPORTAR / IMPORTAR
+// ══════════════════════════════════════════════════
+function exportBackup(){
+  const data = {
+    version: 3,
+    exportedAt: new Date().toISOString(),
+    grades:    localStorage.getItem(GRADE_KEY),
+    students:  localStorage.getItem(STU_KEY),
+    faces:     localStorage.getItem(DB_KEY),
+    accounts:  localStorage.getItem(ACC_KEY),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const date = new Date().toLocaleDateString('es-CO',{year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'-');
+  a.href     = url;
+  a.download = 'PIDAC_backup_'+date+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Copia exportada correctamente');
+}
+
+function importBackup(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data.version){ alert('Archivo no válido.'); return; }
+      const counts = {
+        grados:      data.grades   ? JSON.parse(data.grades).length   : 0,
+        estudiantes: data.students ? JSON.parse(data.students).length : 0,
+        fotos:       data.faces    ? Object.keys(JSON.parse(data.faces)).length : 0,
+        cuentas:     data.accounts ? JSON.parse(data.accounts).length : 0,
+      };
+      const msg = `¿Restaurar copia de seguridad?\n\nEsto REEMPLAZARÁ los datos actuales con:\n• ${counts.grados} grados\n• ${counts.estudiantes} estudiantes\n• ${counts.fotos} fotos registradas\n• ${counts.cuentas} cuentas\n\nFecha de la copia: ${new Date(data.exportedAt).toLocaleString('es-CO')}`;
+      if(!confirm(msg)) return;
+      if(data.grades)   localStorage.setItem(GRADE_KEY, data.grades);
+      if(data.students) localStorage.setItem(STU_KEY,   data.students);
+      if(data.faces)    localStorage.setItem(DB_KEY,    data.faces);
+      if(data.accounts) localStorage.setItem(ACC_KEY,   data.accounts);
+      syncStudents();
+      renderGradeTabs();
+      renderTable();
+      updateStats();
+      renderDbGrid();
+      buildDescriptors();
+      showToast('Datos restaurados correctamente');
+    }catch(err){
+      alert('Error al leer el archivo: '+err.message);
+    }
+    event.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+</script>
 
 <script>
 // ══════════════════════════════════════════════════
@@ -843,81 +1371,99 @@ loadModels();
 const CREDS = { user:'PIDAC_ADMIN', pass:'PIDAC1234' };
 
 // ══════════════════════════════════════════════════
-//  STUDENT DATA — Grado 11-6 completo
+//  STORAGE KEYS
 // ══════════════════════════════════════════════════
-const COLORS = ['#00E5A0','#00B8FF','#A855F7','#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#FF6B6B','#C77DFF','#E63946'];
-const RAW_STUDENTS = [
-  'ailyn sofia mora quintero',
-  'andres felipe velasquez garavito',
-  'bladimir santiago lara martinez',
-  'brayhan andreyt lobo alvarado',
-  'cristian steven hernandez parra',
-  'daniel felipe jimenez rueda',
-  'daniel santiago aldana alvarez',
-  'danna johanna lopez ramirez',
-  'david alberto sierra pava',
-  'deiver arturo sisa amaya',
-  'drake meza beltran',
-  'elenis isabel santiago moncada',
-  'emily saray jaraba valle',
-  'frey manuel vanegas garrido',
-  'gian frank duarte hernandez',
-  'isabella jimenez viana',
-  'iset dayanna niño miranda',
-  'javier alexis gomez garcia',
-  'jeicob alejandro salas gomez',
-  'jhon stiven rueda reales',
-  'johann santiago pico estevez',
-  'joseph stiven hernandez arguello',
-  'julian javier torres muñoz',
-  'karol ivanna gomez gutierrez',
-  'kevin david hernandez ramirez',
-  'kevin santiago jaimes valero',
-  'luis jeronimo silva fonseca',
-  'luisa fernanda ariza ruiz',
-  'luisa fernanda silva rodriguez',
-  'maroleth dayanna hurtado perez',
-  'melany saray reales velasquez',
-  'nathan alexander espinosa gomez',
-  'nelly daniela guerra montesino',
-  'nicolas elias ortega gamarra',
-  'nosluyw miguel franco rincon',
-  'oscar enrique villalobos de la rosa',
-  'owent acevedo bayona',
-  'santiago yanez vega',
-  'saray sofia hernandez mora',
-  'sebastian smit molina cadena',
-  'steeveen david velasquez oliveros',
-  'yohan mauricio yara martinez',
+const DB_KEY      = 'pidac_face_db_v2';
+const STU_KEY     = 'pidac_students_v3';
+const GRADE_KEY   = 'pidac_grades_v3';
+
+const COLORS=['#00E5A0','#00B8FF','#A855F7','#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#C77DFF','#E63946','#F4A261'];
+
+function genId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function toInitials(name){ const p=name.trim().split(' '); return (p[0][0]+(p[1]?p[1][0]:'')).toUpperCase(); }
+function toTitle(name){ return name.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(' '); }
+
+// ── GRADES ──
+function loadGrades(){ try{ return JSON.parse(localStorage.getItem(GRADE_KEY))||[]; }catch(e){ return []; } }
+function saveGrades(g){
+  localStorage.setItem(GRADE_KEY, JSON.stringify(g));
+  if(window.fbSaveGrade) g.forEach(gr=>window.fbSaveGrade(gr).catch(e=>console.warn('fb grade:',e)));
+}
+
+function initGrades(){
+  let grades = loadGrades();
+  if(grades.length===0){
+    grades=[{id:'g116',name:'11-6',desc:'Grado once seis'}];
+    saveGrades(grades);
+  }
+  return grades;
+}
+
+// ── STUDENTS ──
+function loadStudentsDB(){ try{ return JSON.parse(localStorage.getItem(STU_KEY))||[]; }catch(e){ return []; } }
+function saveStudentsDB(arr){
+  localStorage.setItem(STU_KEY, JSON.stringify(arr));
+  if(window.fbSaveStudent) arr.forEach(s=>window.fbSaveStudent(s).catch(e=>console.warn('fb student:',e)));
+}
+
+const RAW_DEFAULT=[
+  'ailyn sofia mora quintero','andres felipe velasquez garavito','bladimir santiago lara martinez',
+  'brayhan andreyt lobo alvarado','cristian steven hernandez parra','daniel felipe jimenez rueda',
+  'daniel santiago aldana alvarez','danna johanna lopez ramirez','david alberto sierra pava',
+  'deiver arturo sisa amaya','drake meza beltran','elenis isabel santiago moncada',
+  'emily saray jaraba valle','frey manuel vanegas garrido','gian frank duarte hernandez',
+  'isabella jimenez viana','iset dayanna niño miranda','javier alexis gomez garcia',
+  'jeicob alejandro salas gomez','jhon stiven rueda reales','johann santiago pico estevez',
+  'joseph stiven hernandez arguello','julian javier torres muñoz','karol ivanna gomez gutierrez',
+  'kevin david hernandez ramirez','kevin santiago jaimes valero','luis jeronimo silva fonseca',
+  'luisa fernanda ariza ruiz','luisa fernanda silva rodriguez','maroleth dayanna hurtado perez',
+  'melany saray reales velasquez','nathan alexander espinosa gomez','nelly daniela guerra montesino',
+  'nicolas elias ortega gamarra','nosluyw miguel franco rincon','oscar enrique villalobos de la rosa',
+  'owent acevedo bayona','santiago yanez vega','saray sofia hernandez mora',
+  'sebastian smit molina cadena','steeveen david velasquez oliveros','yohan mauricio yara martinez',
 ];
 
-function toInitials(name){
-  const p = name.trim().split(' ');
-  return (p[0][0] + (p[1] ? p[1][0] : '')).toUpperCase();
+function initStudents(){
+  let db = loadStudentsDB();
+  if(db.length===0){
+    const grades=loadGrades();
+    const defaultGradeId=grades[0]?grades[0].id:'g116';
+    db=RAW_DEFAULT.map((raw,i)=>({
+      id: String(i+1).padStart(3,'0'),
+      name: toTitle(raw),
+      initials: toInitials(raw),
+      number: i+1,
+      gradeId: defaultGradeId,
+      color: COLORS[i%COLORS.length],
+      status: 'absent',
+    }));
+    saveStudentsDB(db);
+  }
+  return db;
 }
-function toTitle(name){
-  return name.split(' ').map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
-}
 
-const students = RAW_STUDENTS.map((raw, i) => ({
-  id: String(i+1).padStart(3,'0'),
-  name: toTitle(raw),
-  initials: toInitials(raw),
-  color: COLORS[i % COLORS.length],
-  status: 'absent',
-}));
+// runtime array — always in sync with DB
+let students = [];
+function syncStudents(){ students = loadStudentsDB().map(s=>({...s, initials: toInitials(s.name)})); }
 
-// ══════════════════════════════════════════════════
-//  FACE DATABASE (localStorage)
-// ══════════════════════════════════════════════════
-const DB_KEY = 'pidac_face_db_v2';
-
+// ── FACE DATABASE ──
 function loadFaceDB(){ try{ return JSON.parse(localStorage.getItem(DB_KEY))||{}; }catch(e){ return {}; } }
 function saveFaceDB(db){ localStorage.setItem(DB_KEY, JSON.stringify(db)); }
 function getFace(id){ return loadFaceDB()[id]||null; }
-function saveFace(id, photo){ const db=loadFaceDB(); db[id]={studentId:id,photo,registeredAt:new Date().toISOString()}; saveFaceDB(db); }
-function deleteFace(id){ const db=loadFaceDB(); delete db[id]; saveFaceDB(db); }
+function saveFace(id, photo){
+  const db=loadFaceDB();
+  db[id]={studentId:id,photo,registeredAt:new Date().toISOString()};
+  saveFaceDB(db);
+  if(window.fbSaveFace) window.fbSaveFace(id,photo).catch(e=>console.warn('fb face:',e));
+}
+function deleteFace(id){
+  const db=loadFaceDB(); delete db[id]; saveFaceDB(db);
+  if(window.fbDeleteFace) window.fbDeleteFace(id).catch(e=>console.warn('fb del face:',e));
+}
 function clearAllFacesDB(){ localStorage.removeItem(DB_KEY); }
+
+// ── ACTIVE GRADE FILTER ──
+let activeGradeId = 'all'; // 'all' | grade id
 
 // ══════════════════════════════════════════════════
 //  FACE-API — DESCRIPTORS
@@ -966,33 +1512,303 @@ function loadImageFromDataURL(dataURL){
 }
 
 // ══════════════════════════════════════════════════
+//  ACCOUNTS STORAGE
+// ══════════════════════════════════════════════════
+const ACC_KEY = 'pidac_accounts_v3';
+function loadAccounts(){ try{ return JSON.parse(localStorage.getItem(ACC_KEY))||[]; }catch(e){ return []; } }
+function saveAccounts(a){
+  localStorage.setItem(ACC_KEY, JSON.stringify(a));
+  if(window.fbSaveAccount) a.forEach(ac=>window.fbSaveAccount(ac).catch(e=>console.warn('fb acc:',e)));
+}
+
+// Current session
+let currentUser = null; // {role, name, username, gradeId?, studentId?}
+let selectedRole = 'admin';
+
+// Apply default role highlight after DOM ready
+document.addEventListener('DOMContentLoaded', ()=>{ selectRole('admin'); });
+
+// ══════════════════════════════════════════════════
+//  ROLE SELECTOR
+// ══════════════════════════════════════════════════
+function selectRole(role){
+  selectedRole = role;
+  document.querySelectorAll('.role-card').forEach(c=>c.className='role-card');
+  const el = document.getElementById('rc-'+role);
+  if(el) el.className = 'role-card sel-'+role;
+}
+
+// ══════════════════════════════════════════════════
 //  AUTH
 // ══════════════════════════════════════════════════
 function doLogin(){
   const u = document.getElementById('l-user').value.trim();
   const p = document.getElementById('l-pass').value;
   const err = document.getElementById('login-err');
+  err.classList.add('hidden');
+
+  // ADMIN hardcoded — always works regardless of selected role card
   if(u===CREDS.user && p===CREDS.pass){
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('app-shell').classList.remove('hidden');
-    err.classList.add('hidden');
-    initApp();
-  } else {
-    err.classList.remove('hidden');
-    document.getElementById('l-pass').value='';
+    currentUser={role:'admin',name:'Administrador',username:CREDS.user};
+    launchShell(); return;
   }
+
+  // Check saved accounts — match username + password only, role comes from the account
+  const accounts = loadAccounts();
+  const acc = accounts.find(a=>a.username===u && a.password===p);
+  if(acc){
+    currentUser={...acc};
+    if(acc.role==='student'){ launchStudentPortal(acc); }
+    else { launchShell(); }
+    return;
+  }
+
+  err.textContent='Usuario o contraseña incorrectos';
+  err.classList.remove('hidden');
+  document.getElementById('l-pass').value='';
 }
-function doLogout(){
-  stopCamera(); stopDbCamera();
+
+function launchShell(){
+  initGrades(); initStudents(); syncStudents();
+  document.getElementById('login-screen').classList.add('hidden');
+  const sp=document.getElementById('student-portal');
+  if(sp) sp.classList.add('hidden');
+  document.getElementById('app-shell').classList.remove('hidden');
+
+  // Sidebar
+  const initials = currentUser.name.trim().split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('sb-av').textContent = initials;
+  document.getElementById('sb-name').textContent = currentUser.name;
+  const pill = document.getElementById('sb-role-pill');
+  if(currentUser.role==='admin'){
+    pill.textContent='Admin'; pill.className='role-pill rp-admin';
+    document.querySelectorAll('.nav-admin-only').forEach(el=>el.style.display='flex');
+  } else {
+    pill.textContent='Profesor'; pill.className='role-pill rp-teacher';
+    document.querySelectorAll('.nav-admin-only').forEach(el=>el.style.display='none');
+    // Hide admin-only DB buttons
+    document.querySelectorAll('.admin-hidden').forEach(el=>el.style.display='none');
+  }
+  initApp();
+}
+
+function launchStudentPortal(acc){
+  initGrades(); initStudents(); syncStudents();
+  document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-shell').classList.add('hidden');
+  document.getElementById('student-portal').classList.remove('hidden');
+
+  // Find linked student
+  const stu = students.find(s=>s.id===acc.studentId) || null;
+  const grades = loadGrades();
+  const grade = stu ? grades.find(g=>g.id===stu.gradeId) : null;
+
+  document.getElementById('sp-name-lbl').textContent = stu ? stu.name : acc.name;
+  document.getElementById('sp-grade-lbl').textContent = grade ? 'Grado '+grade.name : '—';
+
+  const face = stu ? getFace(stu.id) : null;
+  const spAv = document.getElementById('sp-av');
+  if(face) spAv.innerHTML=`<img src="${face.photo}" alt="Foto">`;
+  else spAv.textContent = stu ? toInitials(stu.name) : (acc.name[0]||'?').toUpperCase();
+
+  // Status
+  if(stu){
+    const dot=document.getElementById('sp-dot');
+    const val=document.getElementById('sp-status-val');
+    const colors={present:'present',absent:'absent',late:'late'};
+    dot.className='sp-status-dot '+(colors[stu.status]||'absent');
+    val.textContent=stu.status==='present'?'Presente':stu.status==='late'?'Tardanza':'Ausente';
+  }
+  spCurrentStudentId = stu ? stu.id : null;
+}
+
+function doLogout(){
+  if(typeof stopCamera==='function') stopCamera();
+  if(typeof stopDbCamera==='function') stopDbCamera();
+  if(typeof spStopCam==='function') spStopCam();
+  currentUser=null;
+  document.getElementById('app-shell').classList.add('hidden');
+  const sp=document.getElementById('student-portal');
+  if(sp) sp.classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('l-user').value='';
   document.getElementById('l-pass').value='';
   document.getElementById('login-err').classList.add('hidden');
+  selectedRole='admin';
+  selectRole('admin');
 }
+
 document.addEventListener('keydown', e=>{
   if(e.key==='Enter' && !document.getElementById('login-screen').classList.contains('hidden')) doLogin();
 });
+
+// ══════════════════════════════════════════════════
+//  STUDENT PORTAL CAMERA
+// ══════════════════════════════════════════════════
+let spCamStream=null, spCamActive=false, spCapturedPhoto=null, spCurrentStudentId=null;
+
+async function spToggleCam(){
+  if(spCamActive){ spStopCam(); return; }
+  try{
+    spCamStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+    const video = document.getElementById('sp-camera-feed');
+    video.srcObject = spCamStream;
+    document.getElementById('sp-cam-placeholder').style.display='none';
+    document.getElementById('sp-scan-frame').style.display='block';
+    spCamActive=true;
+    document.getElementById('btn-sp-cam').style.display='none';
+    document.getElementById('btn-sp-capture').style.display='flex';
+  }catch(e){
+    const st=document.getElementById('sp-cam-status');
+    st.className='cam-status-bar error';
+    st.innerHTML=svgX+'No se pudo acceder a la cámara. Verifica permisos.';
+  }
+}
+function spStopCam(){
+  if(spCamStream){spCamStream.getTracks().forEach(t=>t.stop());spCamStream=null;}
+  const v=document.getElementById('sp-camera-feed');if(v)v.srcObject=null;
+  spCamActive=false;
+  document.getElementById('sp-cam-placeholder').style.display='flex';
+  document.getElementById('sp-scan-frame').style.display='none';
+  document.getElementById('btn-sp-cam').style.display='flex';
+  document.getElementById('btn-sp-capture').style.display='none';
+}
+function spCapture(){
+  const video=document.getElementById('sp-camera-feed');
+  const canvas=document.getElementById('sp-capture-canvas');
+  canvas.width=video.videoWidth||320; canvas.height=video.videoHeight||240;
+  const ctx=canvas.getContext('2d');
+  ctx.save();ctx.scale(-1,1);ctx.drawImage(video,-canvas.width,0,canvas.width,canvas.height);ctx.restore();
+  video.style.filter='brightness(2.5)';setTimeout(()=>video.style.filter='',250);
+  spCapturedPhoto=canvas.toDataURL('image/jpeg',0.85);
+  document.getElementById('sp-photo-preview').innerHTML=`<img src="${spCapturedPhoto}" alt="Foto">`;
+  document.getElementById('sp-preview-row').style.display='flex';
+  document.getElementById('btn-sp-save').style.display='flex';
+  spStopCam();
+}
+async function spSave(){
+  if(!spCapturedPhoto||!spCurrentStudentId) return;
+  saveFace(spCurrentStudentId, spCapturedPhoto);
+  await buildDescriptors();
+  const st=document.getElementById('sp-cam-status');
+  st.className='cam-status-bar success';
+  st.innerHTML=svgCheck+'Rostro guardado correctamente. Ya puedes ser reconocido.';
+  document.getElementById('btn-sp-save').style.display='none';
+  // Update avatar
+  document.getElementById('sp-av').innerHTML=`<img src="${spCapturedPhoto}" alt="Foto">`;
+  spCapturedPhoto=null;
+}
+
+// ══════════════════════════════════════════════════
+//  ACCOUNTS MANAGEMENT (Admin only)
+// ══════════════════════════════════════════════════
+function openAccountModal(role){
+  const grades=loadGrades();
+  document.getElementById('acc-fullname').value='';
+  document.getElementById('acc-username').value='';
+  document.getElementById('acc-password').value='';
+  document.getElementById('acc-modal-role').value=role;
+  document.getElementById('acc-modal-err').classList.add('hidden');
+
+  const gradeOpts='<option value="">— Todos los grados —</option>'+grades.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+  document.getElementById('acc-grade-sel').innerHTML=gradeOpts;
+
+  if(role==='student'){
+    document.getElementById('acc-modal-title').innerHTML=`<svg style="width:16px;height:16px;color:var(--accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> Cuenta de estudiante`;
+    document.getElementById('acc-grade-wrap').style.display='none';
+    document.getElementById('acc-student-wrap').style.display='block';
+    const stuOpts='<option value="">— Sin vincular —</option>'+students.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+    document.getElementById('acc-student-sel').innerHTML=stuOpts;
+  } else {
+    document.getElementById('acc-modal-title').innerHTML=`<svg style="width:16px;height:16px;color:var(--accent2)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> Cuenta de profesor`;
+    document.getElementById('acc-grade-wrap').style.display='block';
+    document.getElementById('acc-student-wrap').style.display='none';
+  }
+  document.getElementById('new-account-modal').classList.remove('hidden');
+}
+function closeAccountModal(){ document.getElementById('new-account-modal').classList.add('hidden'); }
+
+function saveAccount(){
+  const name=document.getElementById('acc-fullname').value.trim();
+  const username=document.getElementById('acc-username').value.trim();
+  const password=document.getElementById('acc-password').value;
+  const role=document.getElementById('acc-modal-role').value;
+  const gradeId=document.getElementById('acc-grade-sel').value;
+  const studentId=document.getElementById('acc-student-sel')?.value||'';
+
+  if(!name||!username||password.length<4){
+    document.getElementById('acc-modal-err').classList.remove('hidden'); return;
+  }
+  const accounts=loadAccounts();
+  if(accounts.find(a=>a.username===username)||username===CREDS.user){
+    document.getElementById('acc-modal-err').textContent='Ese usuario ya existe. Elige otro.';
+    document.getElementById('acc-modal-err').classList.remove('hidden'); return;
+  }
+  document.getElementById('acc-modal-err').classList.add('hidden');
+  accounts.push({id:genId(),name,username,password,role,gradeId,studentId,createdAt:new Date().toISOString()});
+  saveAccounts(accounts);
+  closeAccountModal();
+  renderAccounts();
+  showToast('Cuenta creada correctamente');
+}
+
+function deleteAccount(id){
+  if(!confirm('¿Eliminar esta cuenta?')) return;
+  if(window.fbDeleteAccount) window.fbDeleteAccount(id).catch(e=>console.warn('fb del acc:',e));
+  saveAccounts(loadAccounts().filter(a=>a.id!==id));
+  renderAccounts();
+}
+
+function renderAccounts(){
+  const accounts=loadAccounts();
+  const grades=loadGrades();
+  const teachers=accounts.filter(a=>a.role==='teacher');
+  const stuAccs=accounts.filter(a=>a.role==='student');
+  const container=document.getElementById('accounts-list');
+  if(!container) return;
+
+  const renderRow=(a,deletable)=>{
+    const av=toInitials(a.name);
+    const roleColors={teacher:'var(--accent2)',student:'var(--accent)',admin:'var(--purple)'};
+    const grade=grades.find(g=>g.id===a.gradeId);
+    const stu=students.find(s=>s.id===a.studentId);
+    const sub=grade?grade.name:stu?stu.name:'';
+    return `<div class="acc-row">
+      <div class="acc-av" style="background:${roleColors[a.role]||'var(--muted)'}22;color:${roleColors[a.role]||'var(--muted)'}">${av}</div>
+      <div class="acc-info">
+        <div class="acc-name">${a.name}</div>
+        <div class="acc-user">@${a.username}${sub?' · '+sub:''}</div>
+      </div>
+      ${deletable?`<button class="acc-del" onclick="deleteAccount('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>`:''}
+    </div>`;
+  };
+
+  container.innerHTML=`
+    <div class="acc-section">
+      <div class="acc-section-hdr">
+        <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Administradores</h4>
+      </div>
+      <div class="acc-row">
+        <div class="acc-av" style="background:rgba(168,85,247,.15);color:var(--purple)">PA</div>
+        <div class="acc-info"><div class="acc-name">Administrador</div><div class="acc-user">@${CREDS.user} · Cuenta principal</div></div>
+      </div>
+    </div>
+    <div class="acc-section">
+      <div class="acc-section-hdr">
+        <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Profesores (${teachers.length})</h4>
+        <button class="btn-secondary" style="padding:6px 12px;font-size:11px" onclick="openAccountModal('teacher')">+ Agregar</button>
+      </div>
+      ${teachers.length ? teachers.map(a=>renderRow(a,true)).join('') : '<div class="acc-empty">No hay profesores registrados</div>'}
+    </div>
+    <div class="acc-section">
+      <div class="acc-section-hdr">
+        <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>Estudiantes (${stuAccs.length})</h4>
+        <button class="btn-secondary" style="padding:6px 12px;font-size:11px" onclick="openAccountModal('student')">+ Agregar</button>
+      </div>
+      ${stuAccs.length ? stuAccs.map(a=>renderRow(a,true)).join('') : '<div class="acc-empty">No hay cuentas de estudiantes</div>'}
+    </div>
+  `;
+}
 
 // ══════════════════════════════════════════════════
 //  NAVIGATION
@@ -1001,11 +1817,12 @@ function showView(name, el){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
-  el.classList.add('active');
-  const titles={dashboard:'Dashboard',attendance:'Lista de Asistencia',database:'Base de Datos de Rostros',reports:'Reportes y Estadísticas'};
+  if(el) el.classList.add('active');
+  const titles={dashboard:'Dashboard',attendance:'Lista de Asistencia',database:'Estudiantes',reports:'Reportes y Estadísticas',accounts:'Gestión de Cuentas'};
   document.getElementById('view-title').textContent = titles[name]||name;
   if(name==='reports') updateReportChart();
-  if(name==='database') renderDbGrid();
+  if(name==='database'){ renderGradeTabs(); renderDbGrid(); }
+  if(name==='accounts') renderAccounts();
 }
 
 // ══════════════════════════════════════════════════
@@ -1454,7 +2271,7 @@ let dbCameraStream=null, dbCameraActive=false, dbCapturedPhoto=null;
 
 function openDbModal(){
   const sel=document.getElementById('db-student-select');
-  sel.innerHTML=students.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  syncStudents(); sel.innerHTML=students.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
   dbCapturedPhoto=null;
   document.getElementById('db-preview-row').style.display='none';
   document.getElementById('btn-db-save').style.display='none';
@@ -1556,13 +2373,23 @@ function renderDbGrid(){
   const db=loadFaceDB();
   const grid=document.getElementById('db-grid');
   const empty=document.getElementById('db-empty');
-  const withPhoto=Object.keys(db).length;
-  const withoutPhoto=students.length-withPhoto;
-  document.getElementById('db-total').textContent=students.length;
+  const grades=loadGrades();
+
+  // Filter by active grade
+  const list = activeGradeId==='all' ? students : students.filter(s=>s.gradeId===activeGradeId);
+
+  const withPhoto=list.filter(s=>db[s.id]).length;
+  const withoutPhoto=list.length-withPhoto;
+  document.getElementById('db-total').textContent=list.length;
   document.getElementById('db-with-photo').textContent=withPhoto;
   document.getElementById('db-without-photo').textContent=withoutPhoto;
-  grid.innerHTML=students.map(s=>{
+
+  if(list.length===0){ grid.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  grid.innerHTML=list.map(s=>{
     const face=db[s.id];
+    const grade=grades.find(g=>g.id===s.gradeId);
     const photo=face
       ? `<img src="${face.photo}" alt="${s.name}">`
       : `<div class="no-photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/><circle cx="12" cy="12" r="10"/></svg><span>Sin foto</span></div>`;
@@ -1574,19 +2401,31 @@ function renderDbGrid(){
       <div class="face-card-photo">${photo}${badge}</div>
       <div class="face-card-body">
         <div class="face-card-name" title="${s.name}">${s.name}</div>
-        <div class="face-card-id">#${s.id} · 11-6</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:3px">${face?'📅 '+date:'No registrado'}</div>
-        <div class="face-card-actions">
+        <div class="face-card-id">#${s.number||s.id}</div>
+        <div class="face-card-grade">${grade?'📚 '+grade.name:'Sin grado'}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">${face?'📅 '+date:'No registrado'}</div>
+        <div class="face-card-actions" style="flex-wrap:wrap;gap:5px">
           <button class="fc-btn fc-btn-cam" onclick="openDbModalFor('${s.id}')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            ${face?'Actualizar':'Registrar'}
+            ${face?'Actualizar':'Rostro'}
           </button>
-          ${face?`<button class="fc-btn fc-btn-del" onclick="confirmDeleteFace('${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>Borrar</button>`:''}
+          <button class="fc-btn fc-btn-edit" onclick="openAddStudentModal('${s.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+            Editar
+          </button>
+          <button class="fc-btn fc-btn-move" onclick="openMoveModal('${s.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+            Mover
+          </button>
+          <button class="fc-btn fc-btn-del" onclick="deleteStudent('${s.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+            Eliminar
+          </button>
+          ${face?`<button class="fc-btn fc-btn-del" style="flex-basis:100%" onclick="confirmDeleteFace('${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>Borrar foto</button>`:''}
         </div>
       </div>
     </div>`;
   }).join('');
-  empty.classList.toggle('hidden', students.length>0);
 }
 function openDbModalFor(id){
   openDbModal();
@@ -1612,17 +2451,271 @@ function clearAllFaces(){
 //  INIT
 // ══════════════════════════════════════════════════
 function initApp(){
+  initGrades();
+  initStudents();
+  syncStudents();
   const now=new Date();
   document.getElementById('chart-date').textContent=now.toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'});
   if(document.getElementById('rep-date'))
     document.getElementById('rep-date').textContent=now.toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'});
+  renderGradeTabs();
   renderTable();
   updateStats();
   renderDbGrid();
-  // Models already loading since page load — just rebuild descriptors
+  // Hide admin-only elements for teachers
+  if(currentUser && currentUser.role==='teacher'){
+    document.querySelectorAll('.admin-hidden').forEach(el=>el.style.display='none');
+  }
   if(modelsLoaded) buildDescriptors();
   else loadModels().then(()=>buildDescriptors());
 }
+
+// ══════════════════════════════════════════════════
+//  GRADE TABS
+// ══════════════════════════════════════════════════
+function renderGradeTabs(){
+  const grades=loadGrades();
+  const container=document.getElementById('grade-tabs');
+  if(!container) return;
+  let html=`<div class="grade-tab ${activeGradeId==='all'?'active':''}" onclick="setGradeFilter('all')">
+    Todos <span class="gt-count">${students.length}</span>
+  </div>`;
+  grades.forEach(g=>{
+    const cnt=students.filter(s=>s.gradeId===g.id).length;
+    html+=`<div class="grade-tab ${activeGradeId===g.id?'active':''}" onclick="setGradeFilter('${g.id}')">
+      ${g.name} <span class="gt-count">${cnt}</span>
+    </div>`;
+  });
+  html+=`<div class="grade-tab grade-tab-add" onclick="openAddGradeModal()" title="Agregar grado">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Grado
+  </div>`;
+  container.innerHTML=html;
+  updateGradeHdr();
+}
+
+function setGradeFilter(id){
+  activeGradeId=id;
+  renderGradeTabs();
+  renderDbGrid();
+}
+
+function updateGradeHdr(){
+  const grades=loadGrades();
+  const hdrName=document.getElementById('grade-hdr-name');
+  const hdrCount=document.getElementById('grade-hdr-count');
+  const btnEdit=document.getElementById('btn-edit-grade');
+  const btnDel=document.getElementById('btn-del-grade');
+  if(activeGradeId==='all'){
+    hdrName.textContent='Todos los grados';
+    hdrCount.textContent='— '+students.length+' personas';
+    btnEdit.style.display='none'; btnDel.style.display='none';
+  } else {
+    const g=grades.find(x=>x.id===activeGradeId);
+    if(g){
+      hdrName.textContent='Grado '+g.name+(g.desc?' · '+g.desc:'');
+      const cnt=students.filter(s=>s.gradeId===g.id).length;
+      hdrCount.textContent='— '+cnt+' personas';
+    }
+    btnEdit.style.display='flex'; btnDel.style.display='flex';
+  }
+}
+
+// ── ADD GRADE ──
+function openAddGradeModal(){
+  document.getElementById('grade-name-inp').value='';
+  document.getElementById('grade-desc-inp').value='';
+  document.getElementById('edit-grade-id').value='';
+  document.getElementById('grade-modal-title').innerHTML=`<svg style="width:16px;height:16px;color:var(--purple)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> Agregar grado`;
+  document.getElementById('add-grade-err').classList.add('hidden');
+  document.getElementById('add-grade-modal').classList.remove('hidden');
+}
+function openEditGradeModal(){
+  if(activeGradeId==='all') return;
+  const grades=loadGrades();
+  const g=grades.find(x=>x.id===activeGradeId);
+  if(!g) return;
+  document.getElementById('grade-name-inp').value=g.name;
+  document.getElementById('grade-desc-inp').value=g.desc||'';
+  document.getElementById('edit-grade-id').value=g.id;
+  document.getElementById('grade-modal-title').innerHTML=`<svg style="width:16px;height:16px;color:var(--purple)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg> Editar grado`;
+  document.getElementById('add-grade-err').classList.add('hidden');
+  document.getElementById('add-grade-modal').classList.remove('hidden');
+}
+function closeAddGradeModal(){ document.getElementById('add-grade-modal').classList.add('hidden'); }
+function saveGrade(){
+  const name=document.getElementById('grade-name-inp').value.trim();
+  const desc=document.getElementById('grade-desc-inp').value.trim();
+  const editId=document.getElementById('edit-grade-id').value;
+  if(!name){ document.getElementById('add-grade-err').classList.remove('hidden'); return; }
+  document.getElementById('add-grade-err').classList.add('hidden');
+  let grades=loadGrades();
+  if(editId){
+    grades=grades.map(g=>g.id===editId?{...g,name,desc}:g);
+  } else {
+    grades.push({id:'g'+genId(), name, desc, createdAt:new Date().toISOString()});
+  }
+  saveGrades(grades);
+  closeAddGradeModal();
+  renderGradeTabs();
+  refreshGradeSelects();
+  showToast(editId?'Grado actualizado':'Grado creado correctamente');
+}
+function deleteCurrentGrade(){
+  if(activeGradeId==='all') return;
+  const grades=loadGrades();
+  const g=grades.find(x=>x.id===activeGradeId);
+  const inGrade=students.filter(s=>s.gradeId===activeGradeId).length;
+  const msg=inGrade>0
+    ? `¿Eliminar el grado "${g.name}"? Los ${inGrade} estudiantes quedarán sin grado.`
+    : `¿Eliminar el grado "${g.name}"?`;
+  if(!confirm(msg)) return;
+  // Move students to no grade
+  const sdb=loadStudentsDB().map(s=>s.gradeId===activeGradeId?{...s,gradeId:''}:s);
+  saveStudentsDB(sdb);
+  if(window.fbDeleteGrade) window.fbDeleteGrade(activeGradeId).catch(e=>console.warn('fb del grade:',e));
+  saveGrades(grades.filter(x=>x.id!==activeGradeId));
+  activeGradeId='all';
+  syncStudents();
+  renderGradeTabs();
+  renderDbGrid();
+  renderTable();
+  refreshGradeSelects();
+}
+
+// ── ADD / EDIT STUDENT ──
+function openAddStudentModal(editId){
+  refreshGradeSelects();
+  document.getElementById('stu-firstname').value='';
+  document.getElementById('stu-lastname').value='';
+  document.getElementById('stu-number').value='';
+  document.getElementById('edit-stu-id').value='';
+  document.getElementById('add-stu-err').classList.add('hidden');
+  document.getElementById('add-stu-title').innerHTML=`<svg style="width:16px;height:16px;color:var(--accent2)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg> Agregar persona`;
+  // Preselect active grade
+  if(activeGradeId!=='all'){
+    const sel=document.getElementById('stu-grade-select');
+    if(sel) sel.value=activeGradeId;
+  }
+  if(editId){
+    const s=students.find(x=>x.id===editId);
+    if(s){
+      const parts=s.name.split(' ');
+      document.getElementById('stu-firstname').value=parts.slice(0,2).join(' ');
+      document.getElementById('stu-lastname').value=parts.slice(2).join(' ');
+      document.getElementById('stu-number').value=s.number||'';
+      document.getElementById('edit-stu-id').value=s.id;
+      document.getElementById('stu-grade-select').value=s.gradeId||'';
+      document.getElementById('add-stu-title').innerHTML=`<svg style="width:16px;height:16px;color:var(--accent2)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg> Editar persona`;
+    }
+  }
+  document.getElementById('add-student-modal').classList.remove('hidden');
+}
+function closeAddStudentModal(){ document.getElementById('add-student-modal').classList.add('hidden'); }
+
+function saveStudent(){
+  const fn=document.getElementById('stu-firstname').value.trim();
+  const ln=document.getElementById('stu-lastname').value.trim();
+  const num=parseInt(document.getElementById('stu-number').value)||0;
+  const gradeId=document.getElementById('stu-grade-select').value;
+  const editId=document.getElementById('edit-stu-id').value;
+  if(!fn||!ln||!num){ document.getElementById('add-stu-err').classList.remove('hidden'); return; }
+  document.getElementById('add-stu-err').classList.add('hidden');
+  const fullName=toTitle(fn+' '+ln);
+  let db=loadStudentsDB();
+  if(editId){
+    db=db.map(s=>s.id===editId?{...s,name:fullName,initials:toInitials(fullName),number:num,gradeId}:s);
+  } else {
+    db.push({
+      id: genId(),
+      name: fullName,
+      initials: toInitials(fullName),
+      number: num,
+      gradeId,
+      color: COLORS[db.length%COLORS.length],
+      status: 'absent',
+      createdAt: new Date().toISOString()
+    });
+  }
+  saveStudentsDB(db);
+  syncStudents();
+  closeAddStudentModal();
+  renderGradeTabs();
+  renderDbGrid();
+  renderTable();
+  updateStats();
+  showToast(editId?'Persona actualizada':'Persona agregada correctamente');
+}
+
+function deleteStudent(id){
+  const s=students.find(x=>x.id===id);
+  if(!confirm('¿Eliminar a '+(s?s.name:'esta persona')+'? Su foto también se eliminará.')) return;
+  if(window.fbDeleteStudent) window.fbDeleteStudent(id).catch(e=>console.warn('fb del stu:',e));
+  let db=loadStudentsDB().filter(x=>x.id!==id);
+  saveStudentsDB(db);
+  deleteFace(id);
+  syncStudents();
+  buildDescriptors();
+  renderGradeTabs();
+  renderDbGrid();
+  renderTable();
+  updateStats();
+}
+
+// ── MOVE STUDENT ──
+let moveTargetGradeId='';
+function openMoveModal(studentId){
+  const s=students.find(x=>x.id===studentId);
+  document.getElementById('move-stu-id').value=studentId;
+  document.getElementById('move-stu-name').textContent=s?'→ '+s.name:'';
+  moveTargetGradeId='';
+  // Build grade pick grid
+  const grades=loadGrades();
+  const grid=document.getElementById('move-grade-grid');
+  grid.innerHTML=grades.map(g=>`
+    <div class="grade-pick-item ${s&&s.gradeId===g.id?'selected':''}" onclick="pickMoveGrade(this,'${g.id}')">${g.name}</div>
+  `).join('');
+  if(s) moveTargetGradeId=s.gradeId;
+  document.getElementById('move-student-modal').classList.remove('hidden');
+}
+function pickMoveGrade(el,id){
+  document.querySelectorAll('#move-grade-grid .grade-pick-item').forEach(x=>x.classList.remove('selected'));
+  el.classList.add('selected');
+  moveTargetGradeId=id;
+}
+function closeMoveModal(){ document.getElementById('move-student-modal').classList.add('hidden'); }
+function confirmMoveStudent(){
+  const id=document.getElementById('move-stu-id').value;
+  if(!moveTargetGradeId){ alert('Selecciona un grado destino.'); return; }
+  let db=loadStudentsDB();
+  db=db.map(s=>s.id===id?{...s,gradeId:moveTargetGradeId}:s);
+  saveStudentsDB(db);
+  syncStudents();
+  closeMoveModal();
+  renderGradeTabs();
+  renderDbGrid();
+  renderTable();
+  showToast('Persona movida correctamente');
+}
+
+// ── HELPERS ──
+function refreshGradeSelects(){
+  const grades=loadGrades();
+  const opts='<option value="">— Sin grado —</option>'+grades.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+  ['stu-grade-select'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){ el.innerHTML=opts; }
+  });
+}
+
+function showToast(msg){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;top:1rem;right:1rem;z-index:9999;padding:12px 18px;background:#0D1B30;border:1px solid rgba(0,229,160,.4);border-radius:14px;font-size:13px;color:#00E5A0;font-weight:600;animation:popIn .3s ease;box-shadow:0 8px 32px rgba(0,0,0,.5);font-family:Sora,sans-serif';
+  t.textContent='✓ '+msg;
+  document.body.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .4s'; setTimeout(()=>t.remove(),400); },2800);
+}
 </script>
-</body>
-</html>
+
+
+</body></html>
