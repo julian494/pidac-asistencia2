@@ -328,6 +328,53 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
   .db-grid{grid-template-columns:1fr 1fr}
   .face-card-name{font-size:11px}
 }
+
+/* ══ ESP32-CAM PANEL ════════════════════════════════════════ */
+.esp-fab{position:fixed;bottom:80px;right:16px;z-index:9000;width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#0f6e56,#1d9e75);border:none;cursor:pointer;color:#fff;font-size:20px;box-shadow:0 4px 20px rgba(0,229,160,.35);display:flex;align-items:center;justify-content:center;transition:transform .15s,box-shadow .15s;font-family:var(--font)}
+.esp-fab:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(0,229,160,.5)}
+.esp-fab-dot{position:absolute;top:3px;right:3px;width:10px;height:10px;border-radius:50%;background:#ccc;border:2px solid var(--bg);transition:background .3s}
+.esp-fab-dot.live{background:var(--accent);animation:pulse 1.5s infinite}
+.esp-panel{position:fixed;bottom:140px;right:16px;z-index:9000;width:310px;background:var(--surface);border:1px solid rgba(0,229,160,.25);border-radius:20px;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,.5);display:none;flex-direction:column;gap:11px;animation:fadeUp .2s ease}
+.esp-panel.open{display:flex}
+.esp-panel-hdr{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}
+.esp-panel-hdr svg{width:16px;height:16px;color:var(--accent)}
+.esp-status-row{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
+.esp-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:background .3s;flex-shrink:0}
+.esp-dot.on{background:var(--accent)}
+.esp-dot.err{background:var(--danger)}
+.esp-dot.wait{background:var(--warn);animation:pulse .8s infinite}
+.esp-ip-row{display:flex;gap:7px}
+.esp-ip-row input{flex:1;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:border-color .2s}
+.esp-ip-row input:focus{border-color:rgba(0,229,160,.5)}
+.esp-btn{padding:8px 13px;border:none;border-radius:10px;cursor:pointer;font-size:12px;font-weight:700;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:5px;transition:opacity .15s,transform .15s;white-space:nowrap}
+.esp-btn:active{transform:scale(.97)}
+.esp-btn svg{width:13px;height:13px}
+.esp-btn-g{background:linear-gradient(135deg,var(--accent),#00c888);color:#07101F;flex:1}
+.esp-btn-b{background:linear-gradient(135deg,var(--accent2),#0099e0);color:#07101F;width:100%}
+.esp-btn-r{background:rgba(255,61,90,.15);border:1px solid rgba(255,61,90,.3);color:var(--danger);width:100%}
+.esp-stream-wrap{width:100%;aspect-ratio:4/3;background:#040a14;border-radius:12px;overflow:hidden;border:1px solid var(--border);position:relative;display:flex;align-items:center;justify-content:center}
+.esp-stream-wrap img{width:100%;height:100%;object-fit:cover;display:none}
+.esp-stream-wrap img.show{display:block}
+.esp-ph{color:var(--muted);font-size:11px;text-align:center;padding:8px;pointer-events:none}
+.esp-fps{position:absolute;top:6px;right:8px;background:rgba(0,0,0,.65);color:var(--accent);font-size:10px;border-radius:5px;padding:2px 7px;display:none;font-family:var(--mono)}
+.esp-res-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.esp-res-row select,.esp-res-row label{font-size:11px}
+.esp-res-row select{background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:4px 7px;font-family:var(--font);outline:none}
+.esp-scan-res{font-size:11px;color:var(--muted);max-height:72px;overflow-y:auto;display:none;line-height:1.8;border-top:1px solid var(--border);padding-top:8px}
+.esp-found{cursor:pointer;color:var(--accent2);text-decoration:underline;display:block}
+.esp-snap-btn{background:linear-gradient(135deg,#a855f7,#8b3fcc);color:#fff;width:100%;padding:9px;border-radius:10px;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);display:none;align-items:center;justify-content:center;gap:6px;transition:opacity .15s}
+.esp-snap-btn svg{width:13px;height:13px}
+/* ── attendance date toolbar ── */
+.att-date-bar{display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+.att-date-bar input[type=date]{background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:8px 12px;font-family:var(--font);font-size:12px;outline:none}
+.att-date-bar input[type=date]:focus{border-color:rgba(0,229,160,.4)}
+.att-save-btn{padding:8px 14px;background:var(--accent);border:none;border-radius:10px;color:#07101F;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px;transition:opacity .2s}
+.att-save-btn:hover{opacity:.85}
+.att-save-btn svg{width:13px;height:13px}
+.att-restore-btn{padding:8px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:12px;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:5px;transition:all .2s}
+.att-restore-btn:hover{border-color:rgba(0,184,255,.4);color:var(--accent2)}
+.att-restore-btn svg{width:13px;height:13px}
+/* ══ FIN ESP32-CAM PANEL ════════════════════════════════════ */
 </style>
 </head>
 <body onload="onBodyLoad()">
@@ -462,6 +509,19 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
 
     <!-- ASISTENCIA -->
     <div id="view-attendance" class="view">
+      <!-- Barra de fecha y guardado -->
+      <div class="att-date-bar">
+        <input type="date" id="att-date" onchange="loadAttendanceDate(this.value)">
+        <button class="att-save-btn" onclick="saveAttendanceToday()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+          Guardar asistencia
+        </button>
+        <button class="att-restore-btn" onclick="loadAttendanceDate(document.getElementById('att-date').value)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+          Restaurar
+        </button>
+        <span id="att-saved-lbl" style="font-size:11px;color:var(--muted)"></span>
+      </div>
       <div class="toolbar">
         <div class="search-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -996,6 +1056,23 @@ function setupRealtimeListeners(){
     renderDbGrid(); updateStats(); buildDescriptors();
   }));
 
+  fbListeners.push(db.collection('attendance').onSnapshot(snap=>{
+    snap.docChanges().forEach(change=>{
+      if(change.type==='modified'||change.type==='added'){
+        const data=change.doc.data();
+        // Solo actualizar si es la fecha seleccionada actualmente
+        const curDate=document.getElementById('att-date')?.value||getTodayKey();
+        if(data.date===curDate){
+          (data.records||[]).forEach(r=>{
+            const s=students.find(x=>x.id===r.studentId);
+            if(s) s.status=r.status;
+          });
+          renderTable(); updateStats();
+        }
+      }
+    });
+  }));
+
   fbListeners.push(db.collection('accounts').onSnapshot(snap=>{
     snap.docChanges().forEach(change=>{
       const data=change.doc.data();
@@ -1118,6 +1195,7 @@ function launchApp(){
   renderDbGrid();
   populateAttGradeFilter();
   showView('dashboard',document.getElementById('nav-dashboard'));
+  initAttDate();
   if(modelsLoaded) buildDescriptors();
   else loadModels().then(()=>buildDescriptors());
 }
@@ -2099,7 +2177,7 @@ async function startScan(){
 }
 
 async function runFaceLoop(){
-  const video = document.getElementById('camera-feed');
+  const video = document.getElementById('cam-feed');
   const overlay = document.getElementById('face-overlay');
   const box = document.getElementById('cam-box');
 
@@ -2166,7 +2244,7 @@ async function runFaceLoop(){
             if(!recentlyMarked.has(student.id)){
               recentlyMarked.add(student.id);
               student.status = 'present';
-              renderTable(document.getElementById('search-input').value);
+              renderTable(document.getElementById('att-search')?.value||'');
               updateStats();
               addDetectedPanel(student);
               showQuickToast(student.name);
@@ -2355,5 +2433,302 @@ async function init(){
 init();
 
 </script>
+
+<!-- ══ ESP32-CAM PANEL ══════════════════════════════════════ -->
+<div class="esp-panel" id="espPanel">
+  <div class="esp-panel-hdr">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    Cámara ESP32-CAM
+  </div>
+
+  <div class="esp-status-row">
+    <span class="esp-dot" id="espDot"></span>
+    <span id="espTxt">Sin cámara conectada</span>
+  </div>
+
+  <!-- IP + Conectar -->
+  <div class="esp-ip-row">
+    <input type="text" id="espIp" placeholder="192.168.x.x" inputmode="decimal">
+    <button class="esp-btn esp-btn-g" onclick="espConnect()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>
+      Conectar
+    </button>
+  </div>
+
+  <!-- Buscar automático -->
+  <button class="esp-btn esp-btn-b" id="espScanBtn" onclick="espScan()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    Buscar automáticamente en red
+  </button>
+  <div class="esp-scan-res" id="espScanRes"></div>
+
+  <!-- Preview stream -->
+  <div class="esp-stream-wrap" id="espStreamWrap">
+    <div class="esp-ph" id="espPh">El stream aparecerá aquí</div>
+    <img id="espImg" alt="ESP32 Stream" crossorigin="anonymous">
+    <div class="esp-fps" id="espFps">-- fps</div>
+  </div>
+
+  <!-- Controles -->
+  <div class="esp-res-row" id="espCtrls" style="display:none">
+    <select title="Resolución" onchange="espCtrl('framesize',this.value)">
+      <option value="5">QVGA 320×240 (30fps)</option>
+      <option value="8" selected>VGA 640×480 (25fps)</option>
+      <option value="9">SVGA 800×600 (18fps)</option>
+    </select>
+    <select title="Calidad" onchange="espCtrl('quality',this.value)">
+      <option value="10">Alta calidad</option>
+      <option value="15" selected>Media</option>
+      <option value="25">Baja</option>
+    </select>
+    <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" onchange="espCtrl('vflip',this.checked?1:0)"> Voltear</label>
+    <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" onchange="espCtrl('hmirror',this.checked?1:0)"> Espejo</label>
+  </div>
+
+  <!-- Capturar para registro -->
+  <button class="esp-snap-btn" id="espSnapBtn" onclick="espSnap()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    Capturar foto para registro
+  </button>
+
+  <!-- Desconectar -->
+  <button class="esp-btn esp-btn-r" id="espStopBtn" onclick="espDisconnect()" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+    Desconectar cámara
+  </button>
+</div>
+
+<!-- FAB -->
+<button class="esp-fab" id="espFab" onclick="espToggle()" title="Cámara ESP32-CAM">
+  <span style="font-size:20px">📷</span>
+  <span class="esp-fab-dot" id="espFabDot"></span>
+</button>
+
+<script>
+// ══ ESP32-CAM MODULE — integrado con PIDAC v5 ══
+const ESP = { ip:null, live:false, fc:0, t0:0 };
+
+function espToggle(){
+  const p=document.getElementById('espPanel');
+  p.classList.toggle('open');
+  const s=localStorage.getItem('pidac_esp_ip');
+  if(s) document.getElementById('espIp').value=s;
+}
+
+function espStatus(state,txt){
+  const d=document.getElementById('espDot');
+  const f=document.getElementById('espFabDot');
+  d.className='esp-dot'+(state==='on'?' on':state==='err'?' err':state==='wait'?' wait':'');
+  f.className='esp-fab-dot'+(state==='on'?' live':'');
+  document.getElementById('espTxt').textContent=txt;
+}
+
+function espConnect(ipArg){
+  const ip=(ipArg||document.getElementById('espIp').value||'').trim();
+  if(!ip){ showToast('Ingresa la IP del ESP32','warn'); return; }
+  ESP.ip=ip;
+  localStorage.setItem('pidac_esp_ip',ip);
+  espStatus('wait','Conectando a '+ip+'…');
+  // Probar /status primero
+  fetch('http://'+ip+'/status',{signal:AbortSignal.timeout(4000)})
+    .then(r=>r.json())
+    .then(d=>{ espStatus('on','Conectada · '+(d.model||'ESP32-CAM')); espStartStream(); })
+    .catch(()=>{ espStartStream(); }); // intentar de todos modos
+}
+
+function espStartStream(){
+  const img=document.getElementById('espImg');
+  const fps=document.getElementById('espFps');
+  const ctr=document.getElementById('espCtrls');
+  const snap=document.getElementById('espSnapBtn');
+  const stop=document.getElementById('espStopBtn');
+  const ph=document.getElementById('espPh');
+  ESP.live=true; ESP.fc=0; ESP.t0=performance.now();
+
+  img.onload=function(){
+    if(!ESP.live)return;
+    ph.style.display='none';
+    img.classList.add('show');
+    fps.style.display='block';
+    ctr.style.display='flex';
+    snap.style.display='flex';
+    stop.style.display='flex';
+    espStatus('on','En vivo · '+ESP.ip);
+    ESP.fc++;
+    const n=performance.now();
+    if(n-ESP.t0>=1000){ fps.textContent=ESP.fc.toFixed(0)+' fps'; ESP.fc=0; ESP.t0=n; }
+  };
+  img.onerror=function(){
+    if(!ESP.live)return;
+    espStatus('err','Sin señal · reintentando…');
+    setTimeout(()=>{ if(ESP.live) img.src='http://'+ESP.ip+':81/stream?t='+Date.now(); },2500);
+  };
+  img.src='http://'+ESP.ip+':81/stream';
+}
+
+function espDisconnect(){
+  ESP.live=false; ESP.ip=null;
+  const img=document.getElementById('espImg');
+  img.src=''; img.classList.remove('show');
+  document.getElementById('espPh').style.display='block';
+  document.getElementById('espFps').style.display='none';
+  document.getElementById('espCtrls').style.display='none';
+  document.getElementById('espSnapBtn').style.display='none';
+  document.getElementById('espStopBtn').style.display='none';
+  espStatus('','Sin cámara conectada');
+}
+
+function espCtrl(v,val){
+  if(!ESP.ip)return;
+  fetch('http://'+ESP.ip+'/control?var='+v+'&val='+val).catch(()=>{});
+}
+
+// Captura una foto y la pone disponible para el modal de registro de PIDAC
+function espSnap(){
+  if(!ESP.ip)return;
+  fetch('http://'+ESP.ip+'/capture')
+    .then(r=>r.blob())
+    .then(blob=>{
+      const url=URL.createObjectURL(blob);
+      window._espCamUrl=url;
+      window._espCamBlob=blob;
+      // Inyectar en cualquier preview de registro que esté activo
+      ['face-thumb','reg-thumb','sp-thumb','regPreview'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el){ el.innerHTML=`<img src="${url}" alt="esp32-foto" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`; }
+      });
+      // Si el modal de cara está abierto, marcar como capturado
+      const faceMod=document.getElementById('face-modal');
+      if(faceMod&&!faceMod.classList.contains('hidden')){
+        // Convertir blob a dataURL para usarlo como faceCaptured
+        const reader=new FileReader();
+        reader.onload=e=>{
+          faceCaptured=e.target.result;
+          document.getElementById('face-preview').style.display='flex';
+          document.getElementById('btn-face-save').style.display='flex';
+          showToast('Foto ESP32 lista — pulsa Guardar');
+        };
+        reader.readAsDataURL(blob);
+      } else {
+        showToast('📸 Foto capturada. Abre "Registrar Rostro" para guardarla.');
+      }
+    })
+    .catch(()=>showToast('Error al capturar foto','error'));
+}
+
+// Escáner automático de red
+async function espScan(){
+  const btn=document.getElementById('espScanBtn');
+  const res=document.getElementById('espScanRes');
+  btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M21 12a9 9 0 11-6.22-8.56"/></svg> Escaneando…';
+  btn.disabled=true;
+  res.style.display='block';
+  res.innerHTML='Buscando ESP32-CAM en la red local…';
+
+  const saved=localStorage.getItem('pidac_esp_ip')||'';
+  let bases=['192.168.1','192.168.0','10.0.0','192.168.100'];
+  if(saved){ const p=saved.split('.'); if(p.length===4) bases.unshift(p.slice(0,3).join('.')); }
+
+  const found=[];
+  outer: for(const base of bases){
+    for(let s=1;s<=254;s+=25){
+      if(found.length) break outer;
+      const batch=[];
+      for(let i=s;i<s+25&&i<=254;i++){
+        const tip=base+'.'+i;
+        batch.push(
+          fetch('http://'+tip+'/status',{signal:AbortSignal.timeout(500)})
+            .then(r=>r.json())
+            .then(d=>{ if(d.model) found.push({ip:tip,model:d.model}); })
+            .catch(()=>{})
+        );
+      }
+      await Promise.all(batch);
+    }
+  }
+
+  btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Buscar automáticamente en red';
+  btn.disabled=false;
+
+  if(!found.length){
+    res.innerHTML='❌ No encontrada. Verifica que el ESP32 esté encendido y en la misma red WiFi.';
+    return;
+  }
+  res.innerHTML='✅ Encontrada:<br>'+found.map(f=>
+    `<span class="esp-found" onclick="document.getElementById('espIp').value='${f.ip}';espConnect('${f.ip}')">${f.ip} — ${f.model}</span>`
+  ).join('');
+}
+
+// Auto-restaurar IP
+document.addEventListener('DOMContentLoaded',()=>{
+  const s=localStorage.getItem('pidac_esp_ip');
+  if(s){ document.getElementById('espIp').value=s; espStatus('','Última IP: '+s); }
+});
+// ══ FIN ESP32-CAM MODULE ══
+
+// ═══════════════════════════════════════════════════════
+//  ASISTENCIA POR FECHA — guardar y restaurar de Firebase
+// ═══════════════════════════════════════════════════════
+function getTodayKey(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function initAttDate(){
+  const inp=document.getElementById('att-date');
+  if(!inp)return;
+  if(!inp.value) inp.value=getTodayKey();
+}
+
+async function saveAttendanceToday(){
+  if(!db){ showToast('Firebase no conectado','error'); return; }
+  const dateKey=document.getElementById('att-date')?.value||getTodayKey();
+  const snapshot=students.map(s=>({
+    studentId:s.id,
+    name:s.name,
+    gradeId:s.gradeId||'',
+    status:s.status||'absent',
+    savedAt:new Date().toISOString()
+  }));
+  const docId='att-'+dateKey;
+  await fbSet('attendance',docId,{
+    date:dateKey,
+    records:snapshot,
+    savedAt:new Date().toISOString(),
+    savedBy:currentUser?.name||'admin'
+  });
+  const lbl=document.getElementById('att-saved-lbl');
+  if(lbl) lbl.textContent='✓ Guardado '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  showToast('Asistencia del '+dateKey+' guardada');
+}
+
+async function loadAttendanceDate(dateKey){
+  if(!db||!dateKey)return;
+  const docId='att-'+dateKey;
+  try{
+    const snap=await db.collection('attendance').doc(docId).get();
+    if(!snap.exists){
+      const lbl=document.getElementById('att-saved-lbl');
+      if(lbl) lbl.textContent='Sin registro para esta fecha';
+      showToast('No hay asistencia guardada para '+dateKey,'warn');
+      return;
+    }
+    const data=snap.data();
+    (data.records||[]).forEach(r=>{
+      const s=students.find(x=>x.id===r.studentId);
+      if(s) s.status=r.status;
+    });
+    renderTable(); updateStats();
+    const lbl=document.getElementById('att-saved-lbl');
+    if(lbl) lbl.textContent='Restaurado: '+dateKey;
+    showToast('Asistencia del '+dateKey+' restaurada');
+  }catch(e){
+    showToast('Error al restaurar','error');
+  }
+}
+
+</script>
+<!-- ══ FIN ESP32-CAM PANEL ════════════════════════════════════ -->
+
 </body>
 </html>
