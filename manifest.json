@@ -1,0 +1,26 @@
+{
+  "name": "PIDAC — Sistema de Asistencia",
+  "short_name": "PIDAC",
+  "description": "Sistema de asistencia escolar con reconocimiento facial",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#07101F",
+  "theme_color": "#07101F",
+  "lang": "es",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Tomar asistencia",
+      "short_name": "Asistencia",
+      "url": "./#attendance",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
