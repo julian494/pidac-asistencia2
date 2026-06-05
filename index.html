@@ -3430,10 +3430,10 @@ function espActivateStream(){
   };
   img.onerror = function(){
     if(ESP.source==='esp32'){
-      setTimeout(()=>{ img.src='http://'+ESP.ip+':82/stream?t='+Date.now(); }, 2000);
+      setTimeout(()=>{ img.src='http://'+ESP.ip+'/stream?t='+Date.now(); }, 2000);
     }
   };
-  img.src = 'http://'+ESP.ip+':82/stream?t='+Date.now();
+  img.src = 'http://'+ESP.ip+'/stream?t='+Date.now();
   layer.classList.add('active');
   // Esconder video local para que no tape el stream ESP32
   const vid = document.getElementById('cam-feed');
