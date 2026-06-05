@@ -213,9 +213,9 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .btn-modal-cancel{padding:12px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:13px;cursor:pointer;font-family:var(--font);transition:all .2s}
 .btn-modal-cancel:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
 /* ── CAM ── */
-.cam-box{background:#040a14;border-radius:16px;overflow:hidden;position:relative;width:100%;border:1.5px solid var(--border)}
+
 .cam-box video{width:100%;display:block;object-fit:cover;transform:scaleX(-1)}
-canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1)}
+
 .cam-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;color:var(--muted)}
 .cam-ph svg{width:44px;height:44px;opacity:.35}
 .cam-ph p{font-size:12px;opacity:.6;text-align:center}
@@ -375,9 +375,9 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
 @keyframes scanRotate   { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 @keyframes dotBlink     { 0%,100%{opacity:1} 50%{opacity:0} }
 
-.cam-box{position:relative;background:#040a14;border-radius:16px;overflow:hidden;border:1.5px solid var(--border)}
+
 .cam-box video{width:100%;display:block;object-fit:cover}
-canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+
 
 /* HUD overlay — marco general de la cámara */
 .cam-hud{position:absolute;inset:0;pointer-events:none;z-index:5}
@@ -415,6 +415,130 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
 .det-badge.conf-high{background:rgba(0,229,160,.15);border-color:rgba(0,229,160,.5);color:var(--accent)}
 .det-badge.conf-med{background:rgba(255,170,0,.12);border-color:rgba(255,170,0,.4);color:var(--warn)}
 /* ══ FIN SCANNER ════════════════════════════════════════════ */
+
+
+/* ══ CÁMARA — encuadre perfecto PC y móvil ═══════════════════ */
+.cam-box{
+  position:relative;background:#040a14;border-radius:16px;
+  overflow:hidden;border:1.5px solid var(--border);
+  width:100%;
+  /* Altura fija que funciona en PC y celular sin cortar */
+  aspect-ratio:4/3;
+  display:flex;align-items:center;justify-content:center;
+}
+/* En móvil usar proporción más cuadrada para ver la cara completa */
+@media(max-width:768px){
+  .cam-box{ aspect-ratio:3/4; }
+  .cam-box.scan-box{ aspect-ratio:1/1; }
+}
+.cam-box video{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:cover;    /* llena el box sin deformar */
+  object-position:center center;
+  display:block;
+}
+canvas.face-overlay{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  pointer-events:none;
+  /* El canvas se espeja igual que el video */
+  transform:scaleX(-1);
+}
+/* ══ FIN CÁMARA ═══════════════════════════════════════════════ */
+
+
+/* ══ ESP32-CAM INTEGRADO ══════════════════════════════════════ */
+.esp-pill{
+  position:fixed;bottom:80px;right:16px;z-index:9100;
+  display:flex;flex-direction:column;align-items:flex-end;gap:8px;
+}
+.esp-fab{
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,#0f6e56,#1d9e75);
+  border:none;cursor:pointer;color:#fff;font-size:22px;
+  box-shadow:0 4px 20px rgba(0,229,160,.4);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .15s,box-shadow .15s;position:relative;
+}
+.esp-fab:hover{transform:scale(1.08);box-shadow:0 6px 28px rgba(0,229,160,.6)}
+.esp-fab-status{
+  position:absolute;top:2px;right:2px;width:12px;height:12px;
+  border-radius:50%;background:#555;border:2px solid var(--bg);
+  transition:background .3s;
+}
+.esp-fab-status.live{background:var(--accent);animation:pulse 1.5s infinite}
+.esp-fab-status.err{background:var(--danger)}
+.esp-fab-status.scan{background:var(--warn);animation:pulse .6s infinite}
+
+.esp-card{
+  background:var(--surface);border:1px solid rgba(0,229,160,.2);
+  border-radius:20px;padding:14px;width:300px;
+  box-shadow:0 12px 40px rgba(0,0,0,.5);
+  display:none;flex-direction:column;gap:10px;
+  animation:fadeUp .2s ease;
+}
+.esp-card.open{display:flex}
+.esp-card-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+}
+.esp-card-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px}
+.esp-card-title svg{width:15px;height:15px;color:var(--accent)}
+.esp-close{background:none;border:none;color:var(--muted);cursor:pointer;padding:3px;border-radius:6px}
+.esp-close svg{width:14px;height:14px}
+
+.esp-status-row{
+  display:flex;align-items:center;gap:7px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:8px 11px;font-size:11px;
+}
+.esp-s-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
+.esp-s-dot.on{background:var(--accent)}
+.esp-s-dot.err{background:var(--danger)}
+.esp-s-dot.scan{background:var(--warn);animation:pulse .7s infinite}
+.esp-s-txt{flex:1;color:var(--text)}
+.esp-s-fps{font-size:10px;color:var(--muted);font-family:var(--mono)}
+
+/* Stream de la ESP32 dentro del modal de escaneo */
+.esp-stream-layer{
+  position:absolute;inset:0;z-index:2;
+  display:none;
+}
+.esp-stream-layer.active{display:block}
+.esp-stream-layer img{
+  width:100%;height:100%;object-fit:cover;display:block;
+}
+.esp-source-tab{
+  display:flex;gap:6px;background:var(--surface2);
+  border-radius:10px;padding:4px;
+}
+.esp-tab{
+  flex:1;padding:7px;border:none;border-radius:7px;
+  font-size:11px;font-weight:600;cursor:pointer;
+  font-family:var(--font);color:var(--muted);background:transparent;
+  transition:all .2s;
+}
+.esp-tab.active{background:var(--accent);color:#07101F}
+.esp-tab:not(.active):hover{color:var(--text)}
+
+.esp-btn{
+  width:100%;padding:9px;border:none;border-radius:10px;
+  font-size:12px;font-weight:700;cursor:pointer;
+  font-family:var(--font);display:flex;align-items:center;
+  justify-content:center;gap:6px;transition:opacity .15s;
+}
+.esp-btn svg{width:13px;height:13px}
+.esp-btn-g{background:linear-gradient(135deg,var(--accent),#00c888);color:#07101F}
+.esp-btn-r{background:rgba(255,61,90,.15);border:1px solid rgba(255,61,90,.3);color:var(--danger)}
+.esp-scan-res{font-size:11px;color:var(--muted);line-height:1.8;display:none}
+.esp-found{cursor:pointer;color:var(--accent2);text-decoration:underline;display:block}
+.esp-controls{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.esp-controls select{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:7px;color:var(--text);padding:4px 7px;
+  font-family:var(--font);font-size:11px;outline:none;
+}
+/* ══ FIN ESP32-CAM ════════════════════════════════════════════ */
 
 </style>
 </head>
@@ -723,21 +847,21 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
 </div>
 
 <!-- ═══ MODALES ═══ -->
-<!-- CAMARA ESCANEO — v7 MediaPipe + HUD -->
+<!-- CAMARA ESCANEO -->
 <div id="cam-modal" class="modal-overlay hidden">
   <div class="modal" style="max-width:520px;padding:1rem">
     <div class="modal-header" style="margin-bottom:.75rem">
       <h3 style="display:flex;align-items:center;gap:7px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;color:var(--accent)"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         Reconocimiento Facial
-        <span id="mp-badge" style="font-size:9px;padding:2px 7px;border-radius:20px;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);color:var(--accent);font-weight:700;letter-spacing:.3px">MediaPipe</span>
+        <span id="mp-badge" style="font-size:9px;padding:2px 7px;border-radius:20px;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);color:var(--accent);font-weight:700;letter-spacing:.3px">face-api.js</span>
       </h3>
       <button class="modal-close" onclick="closeCamModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
 
     <!-- Cámara con HUD -->
-    <div class="cam-box" id="cam-box" style="aspect-ratio:4/3">
-      <video id="cam-feed" autoplay playsinline muted style="width:100%;display:block;object-fit:cover;transform:scaleX(-1)"></video>
+    <div class="cam-box scan-box" id="cam-box">
+      <video id="cam-feed" autoplay playsinline muted style="transform:scaleX(-1)"></video>
       <canvas id="face-overlay" class="face-overlay"></canvas>
 
       <!-- HUD decorativo -->
@@ -757,6 +881,14 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
       <!-- FPS counter -->
       <div class="cam-fps-hud" id="cam-fps-hud" style="display:none">
         <span id="fps-val">--</span> fps
+      </div>
+
+      <!-- Stream ESP32-CAM (capa sobre el video local) -->
+      <div class="esp-stream-layer" id="esp-stream-layer">
+        <img id="esp-stream-img" alt="ESP32-CAM" crossorigin="anonymous">
+        <div style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,.6);
+             color:var(--accent);font-size:10px;font-weight:700;border-radius:6px;
+             padding:2px 8px;font-family:var(--mono)">ESP32-CAM</div>
       </div>
 
       <!-- Placeholder -->
@@ -783,7 +915,18 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
 
     <div class="cam-status" id="cam-st" style="margin-top:.625rem"></div>
 
-    <div class="modal-actions" style="margin-top:.75rem">
+    <!-- Selector fuente de cámara -->
+    <div class="esp-source-tab" id="cam-source-tabs" style="margin-top:.75rem">
+      <button class="esp-tab active" id="tab-local" onclick="setCamSource('local')">
+        📷 Cámara local
+      </button>
+      <button class="esp-tab" id="tab-esp32" onclick="setCamSource('esp32')">
+        📡 ESP32-CAM
+        <span id="esp-tab-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--muted);margin-left:4px;vertical-align:middle"></span>
+      </button>
+    </div>
+
+    <div class="modal-actions" style="margin-top:.625rem">
       <button class="btn-modal btn-modal-green" id="btn-cam-start" onclick="startScan()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
         Iniciar cámara
@@ -801,8 +944,8 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
       <button class="modal-close" onclick="closeFaceModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="form-field"><label>Estudiante</label><select id="face-student-sel" onchange="onFaceStuChange()"></select></div>
-    <div class="cam-box" id="face-cam-box" style="aspect-ratio:4/3">
-      <video id="face-cam" autoplay playsinline muted style="transform:scaleX(-1);width:100%;display:block;object-fit:cover"></video>
+    <div class="cam-box" id="face-cam-box">
+      <video id="face-cam" autoplay playsinline muted style="transform:scaleX(-1)"></video>
       <div class="cam-ph" id="face-cam-ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><p>Presiona iniciar cámara</p></div>
       <div class="scan-frame" id="face-sf"><div class="sf-c sf-tl"></div><div class="sf-c sf-tr"></div><div class="sf-c sf-bl"></div><div class="sf-c sf-br"></div><div class="sf-beam"></div></div>
     </div>
@@ -1005,10 +1148,7 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
 </div>
 
 <!-- face-api -->
-<!-- MediaPipe FaceDetection (Google) — ultrarrápido para detección en tiempo real -->
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js" crossorigin="anonymous"></script>
-<!-- face-api.js con modelo SSD MobileNet — para identificación/reconocimiento -->
+<!-- face-api.js — detección + reconocimiento facial en el navegador -->
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script>
 
@@ -1131,6 +1271,23 @@ function setupRealtimeListeners(){
         delete faces[change.doc.id];
     });
     renderDbGrid(); updateStats(); buildDescriptors();
+  }));
+
+  // Listener de dispositivos (ESP32-CAM)
+  fbListeners.push(db.collection('devices').onSnapshot(snap=>{
+    snap.docChanges().forEach(change=>{
+      if(change.type==='added'||change.type==='modified'){
+        const d=change.doc.data();
+        if(change.doc.id==='esp32cam'&&d.ip){
+          // ESP32 se registró o cambió de IP — actualizar automáticamente
+          const age=(Date.now()-new Date(d.updatedAt||0).getTime())/1000;
+          if(age<60&&(!ESP||!ESP.live)){ // menos de 1 min y no conectado
+            console.log('✓ ESP32-CAM detectado en Firebase:',d.ip);
+            if(typeof espConnect==='function') espConnect(d.ip,true);
+          }
+        }
+      }
+    });
   }));
 
   fbListeners.push(db.collection('accounts').onSnapshot(snap=>{
@@ -2096,7 +2253,7 @@ async function confirmImport(){
 }
 
 // ═══════════════════════════════════════════════════════
-//  MOTOR IA v7 — MediaPipe (detección) + face-api SSD (identidad)
+//  MOTOR IA v8 — face-api.js TinyFaceDetector optimizado
 // ═══════════════════════════════════════════════════════
 
 // ── Constantes de reconocimiento
@@ -2112,24 +2269,8 @@ let mpDetector      = null;    // instancia MediaPipe FaceDetection
 let mpReady         = false;   // MediaPipe lista
 let ssdReady        = false;   // face-api SSD lista
 
-// ── Cargar MediaPipe FaceDetection
-async function loadMediaPipe(){
-  return new Promise((resolve)=>{
-    if(typeof FaceDetection === 'undefined'){
-      console.warn('MediaPipe no disponible — usando TinyFaceDetector');
-      resolve(false); return;
-    }
-    mpDetector = new FaceDetection({
-      locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${f}`
-    });
-    mpDetector.setOptions({
-      model: 'short',       // 'short' = ultra rápido ≤2m distancia (ideal aula)
-      minDetectionConfidence: 0.6
-    });
-    mpDetector.onResults(onMpResults);
-    mpDetector.initialize().then(()=>{ mpReady=true; resolve(true); }).catch(()=>resolve(false));
-  });
-}
+// MediaPipe eliminado — usar face-api.js puro
+async function loadMediaPipe(){ return false; }
 
 // ── Cargar face-api con SSD MobileNet (mejor que TinyFaceDetector)
 async function loadFaceApiSSD(){
@@ -2156,7 +2297,7 @@ function loadModels(){
   modelsPromise = Promise.all([loadMediaPipe(), loadFaceApiSSD()])
     .then(([mp, ssd])=>{
       modelsLoaded = true;
-      console.log(`✓ Motor IA: MediaPipe=${mp} SSD=${ssd}`);
+      console.log(`✓ Motor IA listo`);
     });
   return modelsPromise;
 }
@@ -2251,7 +2392,11 @@ async function runFaceLoop(){
     if(!scanActive){ ctx.clearRect(0,0,overlay.width,overlay.height); return; }
 
     // Sync canvas size
-    const vw = video.videoWidth||640, vh = video.videoHeight||480;
+    // Fuente: cámara local o ESP32-CAM
+    const espImg = window._espScanActive ? document.getElementById('esp-stream-img') : null;
+    const src    = (espImg && espImg.complete && espImg.naturalWidth>0) ? espImg : video;
+    const vw = (src===video ? video.videoWidth : espImg.naturalWidth) || 640;
+    const vh = (src===video ? video.videoHeight: espImg.naturalHeight)|| 480;
     if(overlay.width!==vw||overlay.height!==vh){ overlay.width=vw; overlay.height=vh; }
 
     // FPS counter
@@ -3009,6 +3154,293 @@ function checkNotifBanner(){
 // ══ FIN PWA ═══════════════════════════════════════════════════
 </script>
 <!-- ══ FIN PWA ════════════════════════════════════════════════ -->
+
+
+<!-- ══ ESP32-CAM PANEL ═════════════════════════════════════════ -->
+<div class="esp-pill" id="espPill">
+  <div class="esp-card" id="espCard">
+    <div class="esp-card-hdr">
+      <div class="esp-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        ESP32-CAM
+      </div>
+      <button class="esp-close" onclick="espToggle()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Estado -->
+    <div class="esp-status-row">
+      <span class="esp-s-dot" id="espDot"></span>
+      <span class="esp-s-txt" id="espTxt">Sin cámara</span>
+      <span class="esp-s-fps" id="espFpsLbl"></span>
+    </div>
+
+    <!-- Botón auto-detectar (lee Firebase) -->
+    <button class="esp-btn esp-btn-g" id="espAutoBtn" onclick="espAutoDetect()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/>
+      </svg>
+      Detectar ESP32-CAM automáticamente
+    </button>
+
+    <div class="esp-scan-res" id="espScanRes"></div>
+
+    <!-- Controles (solo visibles cuando conectado) -->
+    <div id="espConnected" style="display:none;flex-direction:column;gap:8px">
+      <div class="esp-controls">
+        <select onchange="espCtrl('framesize',this.value)" title="Resolución">
+          <option value="5">QVGA 320×240 (30fps)</option>
+          <option value="8" selected>VGA 640×480 (25fps)</option>
+          <option value="9">SVGA 800×600 (18fps)</option>
+        </select>
+        <select onchange="espCtrl('quality',this.value)" title="Calidad">
+          <option value="10">Alta calidad</option>
+          <option value="15" selected>Media</option>
+          <option value="25">Baja</option>
+        </select>
+      </div>
+      <button class="esp-btn esp-btn-r" onclick="espDisconnect()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+        </svg>
+        Desconectar
+      </button>
+    </div>
+  </div>
+
+  <button class="esp-fab" id="espFab" onclick="espToggle()" title="ESP32-CAM">
+    📷
+    <span class="esp-fab-status" id="espFabStatus"></span>
+  </button>
+</div>
+
+<script>
+// ══ ESP32-CAM MODULE — Integración con Firebase ══════════════
+const ESP = {
+  ip: null, live: false,
+  fc: 0, t0: 0, fpsTimer: null,
+  source: 'local'  // 'local' | 'esp32'
+};
+
+// ── Estado visual
+function espSetStatus(state, txt){
+  const dot  = document.getElementById('espDot');
+  const fab  = document.getElementById('espFabStatus');
+  const label= document.getElementById('espTxt');
+  const map  = {on:'on', err:'err', scan:'scan', '':''};
+  dot.className  = 'esp-s-dot ' + (map[state]||'');
+  fab.className  = 'esp-fab-status ' + (map[state]||'');
+  label.textContent = txt;
+  // Actualizar tab del modal
+  const tabDot = document.getElementById('esp-tab-dot');
+  if(tabDot) tabDot.style.background = state==='on'?'var(--accent)':state==='err'?'var(--danger)':'var(--muted)';
+}
+
+function espToggle(){
+  const c = document.getElementById('espCard');
+  c.classList.toggle('open');
+  if(c.classList.contains('open')){
+    const saved = localStorage.getItem('pidac_esp_ip');
+    if(saved && !ESP.live) espConnect(saved, true); // reconectar silencioso
+  }
+}
+
+// ── Auto-detectar: primero Firebase, luego escaneo red
+async function espAutoDetect(){
+  const res = document.getElementById('espScanRes');
+  res.style.display='block';
+  res.innerHTML='🔍 Buscando en Firebase…';
+  espSetStatus('scan','Buscando…');
+
+  // 1. Intentar leer IP de Firebase (el ESP32 la escribe al arrancar)
+  if(db){
+    try{
+      const snap = await db.collection('devices').doc('esp32cam').get();
+      if(snap.exists){
+        const data = snap.data();
+        const ip   = data.ip;
+        const ts   = data.updatedAt ? new Date(data.updatedAt) : null;
+        const age  = ts ? (Date.now()-ts.getTime())/1000 : 999;
+        if(ip && age < 300){ // menos de 5 minutos
+          res.innerHTML = `✅ ESP32-CAM encontrada en Firebase: <strong>${ip}</strong> (hace ${Math.round(age)}s)`;
+          espConnect(ip);
+          return;
+        } else if(ip){
+          res.innerHTML = `⚠️ Última IP conocida: ${ip} (hace ${Math.round(age/60)}min) — verificando…`;
+          espConnect(ip);
+          return;
+        }
+      }
+    } catch(e){ console.warn('Firebase ESP32:', e.message); }
+  }
+
+  // 2. Escaneo de red local
+  res.innerHTML = '🔍 Escaneando red local…';
+  const saved = localStorage.getItem('pidac_esp_ip') || '';
+  let bases = ['192.168.1','192.168.0','10.0.0','192.168.100'];
+  if(saved){ const p=saved.split('.'); if(p.length===4) bases.unshift(p.slice(0,3).join('.')); }
+
+  const found = [];
+  outer: for(const base of bases){
+    for(let s=1;s<=254;s+=25){
+      const batch=[];
+      for(let i=s;i<s+25&&i<=254;i++){
+        const tip=base+'.'+i;
+        batch.push(
+          fetch('http://'+tip+'/status',{signal:AbortSignal.timeout(500)})
+            .then(r=>r.json()).then(d=>{ if(d.model) found.push({ip:tip,model:d.model}); })
+            .catch(()=>{})
+        );
+      }
+      await Promise.all(batch);
+      if(found.length) break outer;
+    }
+  }
+
+  if(!found.length){
+    res.innerHTML='❌ No encontrada. Verifica que el ESP32 esté encendido y en la misma red.';
+    espSetStatus('err','No encontrada');
+    return;
+  }
+  res.innerHTML = '✅ Encontrada:<br>'+found.map(f=>
+    `<span class="esp-found" onclick="espConnect('${f.ip}')">${f.ip} — ${f.model}</span>`
+  ).join('');
+}
+
+// ── Conectar al ESP32
+async function espConnect(ip, silent=false){
+  if(!ip) return;
+  ESP.ip = ip;
+  localStorage.setItem('pidac_esp_ip', ip);
+  espSetStatus('scan', 'Conectando a '+ip+'…');
+
+  // Verificar que responde
+  try{
+    const r = await fetch('http://'+ip+'/status', {signal:AbortSignal.timeout(3000)});
+    const d = await r.json();
+    espSetStatus('on', (d.model||'ESP32-CAM')+' · '+ip);
+    document.getElementById('espConnected').style.display='flex';
+    if(!silent) showToast('📷 ESP32-CAM conectada · '+ip);
+    // Actualizar stream en el modal si está abierto
+    if(ESP.source==='esp32') espActivateStream();
+  } catch(e){
+    // Intentar conectar de todos modos (algunos firmwares no tienen /status)
+    espSetStatus('on', ip+' (sin status)');
+    document.getElementById('espConnected').style.display='flex';
+    if(ESP.source==='esp32') espActivateStream();
+  }
+  ESP.live = true;
+}
+
+function espDisconnect(){
+  ESP.live=false; ESP.ip=null;
+  espSetStatus('','Sin cámara');
+  document.getElementById('espConnected').style.display='none';
+  if(ESP.source==='esp32') setCamSource('local');
+  localStorage.removeItem('pidac_esp_ip');
+  showToast('ESP32-CAM desconectada');
+}
+
+function espCtrl(v,val){
+  if(!ESP.ip) return;
+  fetch('http://'+ESP.ip+'/control?var='+v+'&val='+val).catch(()=>{});
+}
+
+// ── Activar stream ESP32 en el modal de escaneo
+function espActivateStream(){
+  if(!ESP.ip) return;
+  const layer = document.getElementById('esp-stream-layer');
+  const img   = document.getElementById('esp-stream-img');
+  if(!layer || !img) return;
+
+  // Usar el stream ESP32 como fuente para face-api
+  img.onload = function(){
+    if(ESP.source==='esp32'){
+      ESP.fc++;
+      const now = performance.now();
+      if(!ESP.t0) ESP.t0 = now;
+      if(now - ESP.t0 >= 1000){
+        document.getElementById('espFpsLbl').textContent =
+          Math.round(ESP.fc*1000/(now-ESP.t0))+' fps';
+        ESP.fc=0; ESP.t0=now;
+      }
+    }
+  };
+  img.onerror = function(){
+    if(ESP.source==='esp32'){
+      setTimeout(()=>{ img.src='http://'+ESP.ip+':81/stream?t='+Date.now(); }, 2000);
+    }
+  };
+  img.src = 'http://'+ESP.ip+':81/stream';
+  layer.classList.add('active');
+}
+
+function espDeactivateStream(){
+  const layer = document.getElementById('esp-stream-layer');
+  const img   = document.getElementById('esp-stream-img');
+  if(layer) layer.classList.remove('active');
+  if(img){ img.src=''; }
+}
+
+// ── Cambiar fuente de cámara (local ↔ ESP32)
+function setCamSource(source){
+  ESP.source = source;
+  document.getElementById('tab-local').className = 'esp-tab'+(source==='local'?' active':'');
+  document.getElementById('tab-esp32').className = 'esp-tab'+(source==='esp32'?' active':'');
+
+  if(source==='esp32'){
+    if(!ESP.ip || !ESP.live){
+      showToast('Conecta el ESP32-CAM primero 📷','warn');
+      ESP.source='local';
+      document.getElementById('tab-local').className='esp-tab active';
+      document.getElementById('tab-esp32').className='esp-tab';
+      return;
+    }
+    // Pausar cámara local, activar ESP32
+    if(cameraStream){ cameraStream.getTracks().forEach(t=>t.stop()); cameraStream=null; }
+    const v = document.getElementById('cam-feed');
+    if(v) v.srcObject=null;
+    espActivateStream();
+    // El reconocimiento facial ahora usa el <img> del stream
+    window._espScanActive = true;
+    showToast('Usando ESP32-CAM para reconocimiento 📡');
+  } else {
+    // Volver a cámara local
+    espDeactivateStream();
+    window._espScanActive = false;
+    if(scanActive) startScan(); // reiniciar cámara local
+  }
+}
+
+// ── Registrar IP en Firebase (llamar después de conectar)
+async function espRegisterInFirebase(ip, model){
+  if(!db) return;
+  try{
+    await fbSet('devices','esp32cam',{
+      ip, model: model||'ESP32-CAM',
+      updatedAt: new Date().toISOString()
+    });
+  } catch(e){}
+}
+
+// ── Auto-restaurar al iniciar
+document.addEventListener('DOMContentLoaded',()=>{
+  const saved = localStorage.getItem('pidac_esp_ip');
+  if(saved){
+    espSetStatus('','Última: '+saved);
+    // Intentar reconectar silenciosamente
+    setTimeout(()=> espConnect(saved, true), 2000);
+  }
+});
+// ══ FIN ESP32-CAM ════════════════════════════════════════════
+</script>
+<!-- ══ FIN ESP32-CAM PANEL ═══════════════════════════════════ -->
 
 </body>
 </html>
