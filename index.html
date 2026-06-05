@@ -2200,52 +2200,34 @@ function loadImageFromDataURL(dataURL){
 // ── Construir descriptores con SSD (fallback a Tiny)
 async function buildDescriptors(){
   if(!modelsLoaded) return;
-  faceDescriptors=[];
+  faceDescriptors = [];
   let built=0, failed=0;
-  const useSSD = ssdReady && faceapi.nets.ssdMobilenetv1.isLoaded;
-  const detOpts = useSSD
-    ? new faceapi.SsdMobilenetv1Options({minConfidence:0.35})
-    : new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.25, inputSize:416});
-
-  for(const [studentId,data] of Object.entries(faces||{})){
+  const detOpts = new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.15, inputSize:512});
+  for(const [studentId, data] of Object.entries(faces||{})){
     if(!data.photo) continue;
     try{
       const img = await prepareImageForDescriptor(data.photo);
       let det = await faceapi.detectSingleFace(img, detOpts)
-        .withFaceLandmarks(useSSD ? false : true)
-        .withFaceDescriptor();
-      // Intento 2: imagen original
+        .withFaceLandmarks(true).withFaceDescriptor();
       if(!det){
-        const orig=await loadImageFromDataURL(data.photo);
-        det = await faceapi.detectSingleFace(orig, detOpts)
-          .withFaceLandmarks(useSSD ? false : true)
-          .withFaceDescriptor();
+        const orig = await loadImageFromDataURL(data.photo);
+        det = await faceapi.detectSingleFace(orig,
+          new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.08,inputSize:608}))
+          .withFaceLandmarks(true).withFaceDescriptor();
       }
-      if(det){ faceDescriptors.push({studentId, descriptors:[det.descriptor]}); built++; }
-      else failed++;
-    } catch(e){ failed++; }
+      if(det){ faceDescriptors.push({studentId,descriptors:[det.descriptor]}); built++; }
+      else{ failed++; console.warn('Sin descriptor:',studentId); }
+    } catch(e){ failed++; console.warn('Descriptor error:',studentId,e.message); }
   }
-
   if(faceDescriptors.length>0){
-    const labeled = faceDescriptors.map(fd=>
-      new faceapi.LabeledFaceDescriptors(fd.studentId, fd.descriptors)
+    faceMatcher = new faceapi.FaceMatcher(
+      faceDescriptors.map(fd=>new faceapi.LabeledFaceDescriptors(fd.studentId,fd.descriptors)),
+      FR_THRESHOLD
     );
-    faceMatcher = new faceapi.FaceMatcher(labeled, FR_THRESHOLD);
-    console.log(`✓ FaceMatcher: ${built} rostros OK, ${failed} sin descriptor`);
-  } else {
-    faceMatcher=null;
-  }
+    console.log(`✓ FaceMatcher: ${built} OK, ${failed} fallidos`);
+  } else { faceMatcher=null; }
 }
 
-// ══════════════════════════════════════════════════════════════
-//  LOOP DE DETECCIÓN — MediaPipe primero, face-api para identidad
-// ══════════════════════════════════════════════════════════════
-let _mpLastBoxes  = [];   // últimas cajas detectadas por MediaPipe
-let _fpsFrames    = 0;
-let _fpsLast      = 0;
-let _faceLoopId   = null;
-
-// Callback de MediaPipe — solo guarda las bounding boxes (es sincrónico y muy rápido)
 function onMpResults(results){
   _mpLastBoxes = (results.detections||[]).map(d=>{
     const bb = d.boundingBox;
@@ -2262,162 +2244,126 @@ function onMpResults(results){
 async function runFaceLoop(){
   const video   = document.getElementById('cam-feed');
   const overlay = document.getElementById('face-overlay');
-  if(!video || !scanActive) return;
-
+  if(!video||!scanActive) return;
   const ctx = overlay.getContext('2d');
+  overlay.style.transform = ''; // sin espejo en canvas
 
-  // Sincronizar canvas
-  const sync = ()=>{
-    const vw=video.videoWidth||640, vh=video.videoHeight||480;
-    if(overlay.width!==vw){ overlay.width=vw; overlay.height=vh; }
-  };
+  let cachedBoxes=[], cachedIdentities=[];
+  let lastDetect=0, lastRecog=0;
+  const DETECT_MS=80, RECOG_MS=300;
 
-  // Estado de identidad por cara (para confirmación multi-frame)
-  // Usar mapa de posición → studentId → conteo
-  const idHistory = [];
-
-  // Throttle de reconocimiento face-api (pesado) — cada 250ms
-  let lastRecog = 0;
-  const RECOG_INTERVAL = 250;
-
-  // Cache de identidades recientes para no llamar face-api cada frame
-  let cachedIdentities = []; // [{box, studentId, dist, confPct}]
-
-  const loop = async () => {
+  const loop = async ()=>{
     if(!scanActive){ ctx.clearRect(0,0,overlay.width,overlay.height); return; }
-    sync();
+    // Sync canvas
+    const vw=video.videoWidth||640, vh=video.videoHeight||480;
+    if(overlay.width!==vw||overlay.height!==vh){ overlay.width=vw; overlay.height=vh; }
+    // FPS
     _fpsFrames++;
-    const now = performance.now();
-
-    // ── FPS counter cada segundo
-    if(now - _fpsLast >= 1000){
-      const fps = Math.round(_fpsFrames * 1000 / (now - _fpsLast));
-      const fpsEl = document.getElementById('fps-val');
-      if(fpsEl) fpsEl.textContent = fps;
-      _fpsFrames = 0;
-      _fpsLast   = now;
+    const now=performance.now();
+    if(now-_fpsLast>=1000){
+      const el=document.getElementById('fps-val');
+      if(el) el.textContent=Math.round(_fpsFrames*1000/(now-_fpsLast));
+      _fpsFrames=0; _fpsLast=now;
     }
-
-    // ── 1. MediaPipe: detectar caras (ultrarrápido, ~5ms)
-    if(mpReady && mpDetector){
-      try{ await mpDetector.send({image: video}); } catch(e){}
+    // ── DETECCIÓN ──────────────────────────────────────────
+    if(now-lastDetect>=DETECT_MS){
+      lastDetect=now;
+      let mpBoxes=[];
+      if(mpReady&&mpDetector){
+        try{
+          await mpDetector.send({image:video});
+          mpBoxes=_mpLastBoxes.map(b=>({
+            x:(1-b.x-b.width)*vw, y:b.y*vh,
+            w:b.width*vw, h:b.height*vh
+          }));
+        } catch(e){ mpBoxes=[]; }
+      }
+      if(mpBoxes.length>0){
+        cachedBoxes=mpBoxes;
+      } else {
+        try{
+          const dets=await faceapi.detectAllFaces(video,
+            new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.35,inputSize:320}));
+          cachedBoxes=dets.map(d=>({
+            x:vw-d.box.x-d.box.width, y:d.box.y,
+            w:d.box.width, h:d.box.height
+          }));
+        } catch(e){}
+      }
     }
-
-    // ── 2. face-api: reconocer identidades (cada 250ms)
-    if(faceMatcher && now - lastRecog >= RECOG_INTERVAL){
-      lastRecog = now;
+    // ── RECONOCIMIENTO ────────────────────────────────────
+    if(cachedBoxes.length>0 && now-lastRecog>=RECOG_MS){
+      lastRecog=now;
       try{
-        const useSSD = ssdReady && faceapi.nets.ssdMobilenetv1.isLoaded;
-        const detOpts = useSSD
-          ? new faceapi.SsdMobilenetv1Options({minConfidence:0.4})
-          : new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.4, inputSize:320});
-
-        const detections = await faceapi
-          .detectAllFaces(video, detOpts)
-          .withFaceDescriptors();
-
-        cachedIdentities = detections.map(det=>{
-          const box  = det.detection.box;
-          const match= faceMatcher.findBestMatch(det.descriptor);
-          const dist = match.distance;
-          const isMatch = match.label !== 'unknown';
-          return {
-            box,
-            studentId: isMatch ? match.label : null,
-            dist,
-            confPct: isMatch ? Math.max(0,Math.min(100,Math.round((1-dist/FR_THRESHOLD)*100))) : 0
-          };
-        });
-
-        // ── Auto-marcar asistencia con confirmación multi-frame
-        cachedIdentities.forEach(ci=>{
-          if(!ci.studentId) return;
-          confirmBuffer[ci.studentId] = (confirmBuffer[ci.studentId]||0) + 1;
-          if(confirmBuffer[ci.studentId] >= FR_CONFIRM && !recentlyMarked.has(ci.studentId)){
-            recentlyMarked.add(ci.studentId);
-            confirmBuffer[ci.studentId] = 0;
-            const student = students.find(s=>s.id===ci.studentId);
-            if(student){
-              student.status='present';
-              fbSet('students',student.id,{status:'present',updatedAt:new Date().toISOString()});
-              renderTable(document.getElementById('att-search')?.value||'');
-              updateStats();
-              addDetectedPanel(student, ci.confPct);
-              showQuickToast(student.name);
-              if(typeof sendPushNotification==='function')
-                sendPushNotification('✓ Asistencia',student.name+' — presente');
-              setTimeout(()=>recentlyMarked.delete(ci.studentId), FR_COOLDOWN);
+        const withDesc=await faceapi
+          .detectAllFaces(video,new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.35,inputSize:320}))
+          .withFaceLandmarks(true).withFaceDescriptors();
+        if(faceMatcher&&withDesc.length>0){
+          cachedIdentities=withDesc.map(det=>{
+            const box=det.detection.box;
+            const match=faceMatcher.findBestMatch(det.descriptor);
+            const dist=match.distance;
+            const isMatch=match.label!=='unknown'&&dist<FR_THRESHOLD;
+            const confPct=isMatch?Math.max(0,Math.min(100,Math.round((1-dist/FR_THRESHOLD)*100))):null;
+            if(isMatch){
+              const sid=match.label;
+              confirmBuffer[sid]=(confirmBuffer[sid]||0)+1;
+              if(confirmBuffer[sid]>=FR_CONFIRM&&!recentlyMarked.has(sid)){
+                recentlyMarked.add(sid); confirmBuffer[sid]=0;
+                const stu=students.find(s=>s.id===sid);
+                if(stu){
+                  stu.status='present';
+                  fbSet('students',sid,{status:'present',updatedAt:new Date().toISOString()});
+                  renderTable(document.getElementById('att-search')?.value||'');
+                  updateStats(); addDetectedPanel(stu,confPct); showQuickToast(stu.name);
+                  if(typeof sendPushNotification==='function')
+                    sendPushNotification('✓ Asistencia',stu.name+' — presente');
+                  setTimeout(()=>recentlyMarked.delete(sid),FR_COOLDOWN);
+                }
+              }
             }
-          }
-        });
-        // Reset buffer caras no vistas
+            return {
+              box:{x:vw-box.x-box.width,y:box.y,width:box.width,height:box.height},
+              studentId:isMatch?match.label:null, confPct
+            };
+          });
+        } else if(!faceMatcher){ cachedIdentities=[]; }
         Object.keys(confirmBuffer).forEach(k=>{
           if(!cachedIdentities.find(ci=>ci.studentId===k)) confirmBuffer[k]=0;
         });
-      } catch(e){}
+      } catch(e){ console.warn('Recog:',e.message); }
     }
-
-    // ── 3. Dibujar en canvas
+    // ── DIBUJAR ────────────────────────────────────────────
     ctx.clearRect(0,0,overlay.width,overlay.height);
-    const vw = video.videoWidth||640, vh = video.videoHeight||480;
-
-    // Usar cajas de MediaPipe si disponibles, si no las de face-api
-    const drawBoxes = mpReady && _mpLastBoxes.length > 0
-      ? _mpLastBoxes.map(b=>({
-          x: b.x*vw, y: b.y*vh,
-          w: b.width*vw, h: b.height*vh,
-          score: b.score
-        }))
-      : cachedIdentities.map(ci=>({
-          x: ci.box.x, y: ci.box.y,
-          w: ci.box.width, h: ci.box.height,
-          score: 0.9
-        }));
-
-    // Actualizar HUD status
-    const hudDot   = document.getElementById('hud-dot');
-    const hudLabel = document.getElementById('hud-label');
-    if(hudDot && hudLabel){
-      if(drawBoxes.length>0){
-        hudDot.className='hud-dot';           // verde
-        hudLabel.textContent = drawBoxes.length===1 ? '1 CARA DETECTADA' : drawBoxes.length+' CARAS';
+    const dot=document.getElementById('hud-dot');
+    const lbl=document.getElementById('hud-label');
+    if(dot&&lbl){
+      if(cachedBoxes.length>0){
+        dot.className='hud-dot';
+        lbl.textContent=cachedBoxes.length===1?'1 CARA DETECTADA':cachedBoxes.length+' CARAS';
       } else {
-        hudDot.className='hud-dot yellow';
-        hudLabel.textContent = faceMatcher ? 'BUSCANDO...' : 'SIN ROSTROS REGISTRADOS';
+        dot.className='hud-dot yellow';
+        lbl.textContent=faceMatcher?'BUSCANDO...':'ACERCA TU CARA';
       }
     }
-
-    drawBoxes.forEach((b,i)=>{
-      // Buscar identidad para esta caja (por proximidad)
-      const identity = cachedIdentities.find(ci=>{
-        if(!ci.box) return false;
-        const cx1=b.x+b.w/2, cy1=b.y+b.h/2;
-        const cx2=ci.box.x+ci.box.width/2, cy2=ci.box.y+ci.box.height/2;
-        return Math.abs(cx1-cx2) < b.w*0.5 && Math.abs(cy1-cy2) < b.h*0.5;
+    cachedBoxes.forEach(b=>{
+      const ident=cachedIdentities.find(ci=>{
+        const cx1=b.x+b.w/2,cy1=b.y+b.h/2;
+        const cx2=ci.box.x+ci.box.width/2,cy2=ci.box.y+ci.box.height/2;
+        return Math.abs(cx1-cx2)<b.w*0.6&&Math.abs(cy1-cy2)<b.h*0.6;
       });
-
-      const studentId = identity?.studentId || null;
-      const confPct   = identity?.confPct   || null;
-      const student   = studentId ? students.find(s=>s.id===studentId) : null;
-      const label     = student
-        ? student.name.split(' ').slice(0,2).join(' ')
-        : (identity ? 'Desconocido' : 'Detectado');
-      const color     = student
-        ? (confPct>=85 ? '#00E5A0' : '#7FFFD4')
-        : identity ? '#FF3D5A' : '#00B8FF';
-
-      drawScanBox(ctx, b.x, b.y, b.w, b.h, color, label, confPct, student);
+      const sid=ident?.studentId||null;
+      const conf=ident?.confPct??null;
+      const stu=sid?students.find(s=>s.id===sid):null;
+      const label=stu?stu.name.split(' ').slice(0,2).join(' '):(ident?'Desconocido':'Detectado');
+      const color=stu?(conf>=85?'#00E5A0':'#7FFFD4'):(ident?'#FF3D5A':'#00B8FF');
+      drawScanBox(ctx,b.x,b.y,b.w,b.h,color,label,conf,stu);
     });
-
-    _faceLoopId = requestAnimationFrame(loop);
+    _faceLoopId=requestAnimationFrame(loop);
   };
-
-  _faceLoopId = requestAnimationFrame(loop);
+  _faceLoopId=requestAnimationFrame(loop);
 }
 
-// ══════════════════════════════════════════════════════════════
-//  DIBUJAR CAJA DE ESCANEO CINEMATOGRÁFICA
-// ══════════════════════════════════════════════════════════════
 function drawScanBox(ctx, x, y, w, h, color, label, confPct, student){
   const t   = performance.now();
   const pad = Math.max(w,h)*0.08; // padding alrededor de la cara
