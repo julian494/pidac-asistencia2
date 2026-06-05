@@ -364,6 +364,58 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
 .notif-allow-btn{margin-left:auto;padding:6px 12px;background:var(--purple);border:none;border-radius:8px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font)}
 .notif-dismiss{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px}
 .notif-dismiss svg{width:14px;height:14px}
+
+/* ══ SCANNER CINEMATOGRÁFICO ════════════════════════════════ */
+@keyframes scanBeam     { 0%{top:6%}  100%{top:94%} }
+@keyframes scanBeamRev  { 0%{top:94%} 100%{top:6%}  }
+@keyframes cornerPulse  { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.92)} }
+@keyframes labelSlide   { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+@keyframes matchFlash   { 0%{box-shadow:0 0 0 0 rgba(0,229,160,.8)} 70%{box-shadow:0 0 0 18px rgba(0,229,160,0)} 100%{box-shadow:0 0 0 0 rgba(0,229,160,0)} }
+@keyframes unknownFlash { 0%{box-shadow:0 0 0 0 rgba(255,61,90,.8)} 70%{box-shadow:0 0 0 18px rgba(255,61,90,0)} 100%{box-shadow:0 0 0 0 rgba(255,61,90,0)} }
+@keyframes scanRotate   { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes dotBlink     { 0%,100%{opacity:1} 50%{opacity:0} }
+
+.cam-box{position:relative;background:#040a14;border-radius:16px;overflow:hidden;border:1.5px solid var(--border)}
+.cam-box video{width:100%;display:block;object-fit:cover}
+canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+
+/* HUD overlay — marco general de la cámara */
+.cam-hud{position:absolute;inset:0;pointer-events:none;z-index:5}
+.cam-hud-corner{position:absolute;width:22px;height:22px;border-color:rgba(0,229,160,.7);border-style:solid;transition:border-color .3s}
+.cam-hud-corner.tl{top:10px;left:10px;border-width:2px 0 0 2px;border-radius:4px 0 0 0}
+.cam-hud-corner.tr{top:10px;right:10px;border-width:2px 2px 0 0;border-radius:0 4px 0 0}
+.cam-hud-corner.bl{bottom:10px;left:10px;border-width:0 0 2px 2px;border-radius:0 0 0 4px}
+.cam-hud-corner.br{bottom:10px;right:10px;border-width:0 2px 2px 0;border-radius:0 0 4px 0}
+.cam-hud-line-h{position:absolute;top:50%;left:12px;right:12px;height:1px;background:linear-gradient(90deg,transparent,rgba(0,229,160,.15),transparent)}
+.cam-hud-line-v{position:absolute;left:50%;top:12px;bottom:12px;width:1px;background:linear-gradient(180deg,transparent,rgba(0,229,160,.15),transparent)}
+
+/* Barra de estado en la cámara */
+.cam-hud-status{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(7,16,31,.75);backdrop-filter:blur(6px);border:1px solid rgba(0,229,160,.2);border-radius:20px;padding:4px 12px;font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.5px;font-family:var(--font);white-space:nowrap;display:flex;align-items:center;gap:5px}
+.hud-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:dotBlink .9s infinite}
+.hud-dot.red{background:var(--danger)}
+.hud-dot.yellow{background:var(--warn)}
+
+/* Contador FPS */
+.cam-fps-hud{position:absolute;bottom:10px;right:10px;background:rgba(7,16,31,.65);border-radius:6px;padding:2px 7px;font-size:10px;color:var(--muted);font-family:var(--mono);z-index:6}
+
+/* Panel de detectados mejorado */
+.detected-panel{margin-top:.875rem;background:var(--surface2);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.detected-panel-hdr{padding:8px 12px;background:rgba(0,229,160,.05);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
+.detected-panel-hdr svg{width:12px;height:12px}
+.detected-list{max-height:120px;overflow-y:auto;padding:6px}
+.det-item{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:9px;background:rgba(0,229,160,.04);border:1px solid rgba(0,229,160,.1);margin-bottom:5px;animation:labelSlide .3s ease}
+.det-item:last-child{margin-bottom:0}
+.det-av{width:30px;height:30px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid rgba(0,229,160,.4)}
+.det-av img{width:100%;height:100%;object-fit:cover}
+.det-av-init{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.det-info{flex:1;min-width:0}
+.det-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.det-time{font-size:9px;color:var(--muted)}
+.det-badge{font-size:9px;padding:2px 8px;border-radius:20px;font-weight:700;background:rgba(0,229,160,.12);border:1px solid rgba(0,229,160,.3);color:var(--accent);white-space:nowrap;flex-shrink:0}
+.det-badge.conf-high{background:rgba(0,229,160,.15);border-color:rgba(0,229,160,.5);color:var(--accent)}
+.det-badge.conf-med{background:rgba(255,170,0,.12);border-color:rgba(255,170,0,.4);color:var(--warn)}
+/* ══ FIN SCANNER ════════════════════════════════════════════ */
+
 </style>
 </head>
 <body onload="onBodyLoad()">
@@ -671,25 +723,70 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
 </div>
 
 <!-- ═══ MODALES ═══ -->
-<!-- CAMARA ESCANEO -->
+<!-- CAMARA ESCANEO — v7 MediaPipe + HUD -->
 <div id="cam-modal" class="modal-overlay hidden">
-  <div class="modal" style="max-width:520px">
-    <div class="modal-header">
-      <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Reconocimiento Facial</h3>
+  <div class="modal" style="max-width:520px;padding:1rem">
+    <div class="modal-header" style="margin-bottom:.75rem">
+      <h3 style="display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;color:var(--accent)"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Reconocimiento Facial
+        <span id="mp-badge" style="font-size:9px;padding:2px 7px;border-radius:20px;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);color:var(--accent);font-weight:700;letter-spacing:.3px">MediaPipe</span>
+      </h3>
       <button class="modal-close" onclick="closeCamModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
+
+    <!-- Cámara con HUD -->
     <div class="cam-box" id="cam-box" style="aspect-ratio:4/3">
-      <video id="cam-feed" autoplay playsinline muted></video>
+      <video id="cam-feed" autoplay playsinline muted style="width:100%;display:block;object-fit:cover;transform:scaleX(-1)"></video>
       <canvas id="face-overlay" class="face-overlay"></canvas>
-      <div class="cam-ph" id="cam-ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><p>Presiona "Iniciar" para escanear</p></div>
-      <div class="scan-frame" id="cam-sf"><div class="sf-c sf-tl"></div><div class="sf-c sf-tr"></div><div class="sf-c sf-bl"></div><div class="sf-c sf-br"></div><div class="sf-beam"></div></div>
-      <div class="model-loading hidden" id="model-loading"><div class="loader-ring"></div><p>Cargando modelos IA…</p></div>
+
+      <!-- HUD decorativo -->
+      <div class="cam-hud">
+        <div class="cam-hud-corner tl"></div>
+        <div class="cam-hud-corner tr"></div>
+        <div class="cam-hud-corner bl"></div>
+        <div class="cam-hud-corner br"></div>
+        <div class="cam-hud-line-h"></div>
+        <div class="cam-hud-line-v"></div>
+        <div class="cam-hud-status" id="cam-hud-status">
+          <span class="hud-dot yellow" id="hud-dot"></span>
+          <span id="hud-label">EN ESPERA</span>
+        </div>
+      </div>
+
+      <!-- FPS counter -->
+      <div class="cam-fps-hud" id="cam-fps-hud" style="display:none">
+        <span id="fps-val">--</span> fps
+      </div>
+
+      <!-- Placeholder -->
+      <div class="cam-ph" id="cam-ph">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <p>Presiona Iniciar para escanear</p>
+      </div>
+
+      <!-- Cargando modelos -->
+      <div class="model-loading hidden" id="model-loading">
+        <div class="loader-ring"></div>
+        <p id="model-loading-txt">Cargando IA…</p>
+      </div>
     </div>
-    <div class="detected-panel hidden" id="det-panel"><h4>Detectados</h4><div id="det-list"></div></div>
-    <div class="cam-status" id="cam-st"></div>
-    <div class="modal-actions">
+
+    <!-- Panel de detectados -->
+    <div class="detected-panel hidden" id="det-panel" style="margin-top:.75rem">
+      <div class="detected-panel-hdr">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Presentes detectados
+      </div>
+      <div class="detected-list" id="det-list"></div>
+    </div>
+
+    <div class="cam-status" id="cam-st" style="margin-top:.625rem"></div>
+
+    <div class="modal-actions" style="margin-top:.75rem">
       <button class="btn-modal btn-modal-green" id="btn-cam-start" onclick="startScan()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>Iniciar cámara
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Iniciar cámara
       </button>
       <button class="btn-modal-cancel" onclick="closeCamModal()">Cancelar</button>
     </div>
@@ -908,6 +1005,10 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
 </div>
 
 <!-- face-api -->
+<!-- MediaPipe FaceDetection (Google) — ultrarrápido para detección en tiempo real -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js" crossorigin="anonymous"></script>
+<!-- face-api.js con modelo SSD MobileNet — para identificación/reconocimiento -->
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script>
 
@@ -1995,133 +2096,437 @@ async function confirmImport(){
 }
 
 // ═══════════════════════════════════════════════════════
-//  FACE-API — MODELOS + RECONOCIMIENTO MEJORADO
+//  MOTOR IA v7 — MediaPipe (detección) + face-api SSD (identidad)
 // ═══════════════════════════════════════════════════════
 
-// Umbrales calibrados para mejor precisión
-const FR_THRESHOLD   = 0.42;  // más estricto (antes 0.52) → menos falsos positivos
-const FR_SCORE_MIN   = 0.55;  // confianza mínima del detector
-const FR_INPUT_SIZE  = 416;   // tamaño de entrada (320 rápido / 416 preciso / 608 máx)
-const FR_CONFIRM     = 2;     // cuántas detecciones seguidas antes de marcar asistencia
-const FR_COOLDOWN    = 12000; // ms antes de poder re-marcar al mismo estudiante
+// ── Constantes de reconocimiento
+const FR_THRESHOLD  = 0.40;   // distancia máxima para match (más bajo = más estricto)
+const FR_CONFIRM    = 2;       // frames consecutivos para confirmar identidad
+const FR_COOLDOWN   = 12000;   // ms sin re-marcar al mismo estudiante
+const confirmBuffer = {};      // studentId → frames consecutivos detectados
 
-// Confirmación multi-frame → evita marcas falsas por un frame borroso
-const confirmBuffer = {}; // studentId → count
+// ── Estado del motor (modelsLoaded ya declarado en globals)
+// // modelsLoaded ya declarado en globals (línea ~82217)
+let modelsPromise   = null;
+let mpDetector      = null;    // instancia MediaPipe FaceDetection
+let mpReady         = false;   // MediaPipe lista
+let ssdReady        = false;   // face-api SSD lista
 
-let modelsPromise = null;
+// ── Cargar MediaPipe FaceDetection
+async function loadMediaPipe(){
+  return new Promise((resolve)=>{
+    if(typeof FaceDetection === 'undefined'){
+      console.warn('MediaPipe no disponible — usando TinyFaceDetector');
+      resolve(false); return;
+    }
+    mpDetector = new FaceDetection({
+      locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${f}`
+    });
+    mpDetector.setOptions({
+      model: 'short',       // 'short' = ultra rápido ≤2m distancia (ideal aula)
+      minDetectionConfidence: 0.6
+    });
+    mpDetector.onResults(onMpResults);
+    mpDetector.initialize().then(()=>{ mpReady=true; resolve(true); }).catch(()=>resolve(false));
+  });
+}
+
+// ── Cargar face-api con SSD MobileNet (mejor que TinyFaceDetector)
+async function loadFaceApiSSD(){
+  try{
+    await Promise.all([
+      faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+    ]);
+    ssdReady = true;
+    console.log('✓ face-api SSD MobileNet cargado');
+    return true;
+  } catch(e){
+    // Fallback a TinyFaceDetector si SSD falla
+    console.warn('SSD falló, cargando TinyFaceDetector como backup:', e.message);
+    try{
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+        faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL),
+        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+      ]);
+      ssdReady = true;
+      return true;
+    } catch(e2){ return false; }
+  }
+}
 
 function loadModels(){
   if(modelsLoaded) return Promise.resolve();
   if(modelsPromise) return modelsPromise;
-  const loadEl = document.getElementById('model-loading');
-  if(loadEl) loadEl.classList.remove('hidden');
-  modelsPromise = Promise.all([
-    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-    faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL),
-    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-  ]).then(()=>{
-    modelsLoaded = true;
-    if(loadEl) loadEl.classList.add('hidden');
-    console.log('✓ Modelos face-api cargados');
-  }).catch(e=>{
-    console.warn('face-api load error:', e);
-    if(loadEl) loadEl.classList.add('hidden');
-  });
+  modelsPromise = Promise.all([loadMediaPipe(), loadFaceApiSSD()])
+    .then(([mp, ssd])=>{
+      modelsLoaded = true;
+      console.log(`✓ Motor IA: MediaPipe=${mp} SSD=${ssd}`);
+    });
   return modelsPromise;
 }
 loadModels();
 
 function _getFace(id){ return (faces||{})[id]||null; }
 
-// Carga una imagen y la normaliza antes de extraer descriptor
+// ── Preparar imagen normalizada para mejor descriptor
 async function prepareImageForDescriptor(dataURL){
-  return new Promise((res, rej)=>{
+  return new Promise((res,rej)=>{
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin='anonymous';
     img.onload = ()=>{
-      // Redimensionar a 160×160 para normalizar entrada (mejora consistencia)
-      const c = document.createElement('canvas');
-      c.width = 160; c.height = 160;
-      const ctx = c.getContext('2d');
-      // Aplicar ligero contraste para mejorar detección en fotos oscuras
-      ctx.filter = 'contrast(1.1) brightness(1.05)';
-      ctx.drawImage(img, 0, 0, 160, 160);
-      const norm = new Image();
-      norm.onload = ()=> res(norm);
-      norm.onerror = rej;
-      norm.src = c.toDataURL('image/jpeg', 0.95);
+      const c=document.createElement('canvas');
+      c.width=160; c.height=160;
+      const ctx=c.getContext('2d');
+      ctx.filter='contrast(1.12) brightness(1.05)';
+      ctx.drawImage(img,0,0,160,160);
+      const out=new Image();
+      out.onload=()=>res(out); out.onerror=rej;
+      out.src=c.toDataURL('image/jpeg',0.95);
     };
-    img.onerror = rej;
-    img.src = dataURL;
+    img.onerror=rej; img.src=dataURL;
   });
 }
 
 function loadImageFromDataURL(dataURL){
-  return new Promise((res, rej) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => res(img);
-    img.onerror = rej;
-    img.src = dataURL;
+  return new Promise((res,rej)=>{
+    const img=new Image(); img.crossOrigin='anonymous';
+    img.onload=()=>res(img); img.onerror=rej; img.src=dataURL;
   });
 }
 
-// buildDescriptors mejorado: intenta múltiples opciones de detector
+// ── Construir descriptores con SSD (fallback a Tiny)
 async function buildDescriptors(){
   if(!modelsLoaded) return;
-  faceDescriptors = [];
-  let built = 0, failed = 0;
+  faceDescriptors=[];
+  let built=0, failed=0;
+  const useSSD = ssdReady && faceapi.nets.ssdMobilenetv1.isLoaded;
+  const detOpts = useSSD
+    ? new faceapi.SsdMobilenetv1Options({minConfidence:0.35})
+    : new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.25, inputSize:416});
 
-  for(const [studentId, data] of Object.entries(faces||{})){
+  for(const [studentId,data] of Object.entries(faces||{})){
     if(!data.photo) continue;
     try{
       const img = await prepareImageForDescriptor(data.photo);
-
-      // Intento 1: TinyFaceDetector con umbral bajo
-      let det = await faceapi
-        .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({
-          scoreThreshold: 0.25,
-          inputSize: FR_INPUT_SIZE
-        }))
-        .withFaceLandmarks(true)
+      let det = await faceapi.detectSingleFace(img, detOpts)
+        .withFaceLandmarks(useSSD ? false : true)
         .withFaceDescriptor();
-
-      // Intento 2: si falla, probar con imagen original sin normalizar
+      // Intento 2: imagen original
       if(!det){
-        const orig = await loadImageFromDataURL(data.photo);
-        det = await faceapi
-          .detectSingleFace(orig, new faceapi.TinyFaceDetectorOptions({
-            scoreThreshold: 0.2,
-            inputSize: 608
-          }))
-          .withFaceLandmarks(true)
+        const orig=await loadImageFromDataURL(data.photo);
+        det = await faceapi.detectSingleFace(orig, detOpts)
+          .withFaceLandmarks(useSSD ? false : true)
           .withFaceDescriptor();
       }
-
-      if(det){
-        faceDescriptors.push({ studentId, descriptors: [det.descriptor] });
-        built++;
-      } else {
-        failed++;
-        console.warn('Sin descriptor para:', studentId);
-      }
-    } catch(e){
-      failed++;
-      console.warn('Error procesando cara de', studentId, e.message);
-    }
+      if(det){ faceDescriptors.push({studentId, descriptors:[det.descriptor]}); built++; }
+      else failed++;
+    } catch(e){ failed++; }
   }
 
-  if(faceDescriptors.length > 0){
-    const labeled = faceDescriptors.map(fd =>
+  if(faceDescriptors.length>0){
+    const labeled = faceDescriptors.map(fd=>
       new faceapi.LabeledFaceDescriptors(fd.studentId, fd.descriptors)
     );
     faceMatcher = new faceapi.FaceMatcher(labeled, FR_THRESHOLD);
-    console.log(`✓ FaceMatcher listo: ${built} rostros / ${failed} sin descriptor`);
+    console.log(`✓ FaceMatcher: ${built} rostros OK, ${failed} sin descriptor`);
   } else {
-    faceMatcher = null;
-    console.warn('FaceMatcher vacío — registra rostros primero');
+    faceMatcher=null;
   }
 }
+
+// ══════════════════════════════════════════════════════════════
+//  LOOP DE DETECCIÓN — MediaPipe primero, face-api para identidad
+// ══════════════════════════════════════════════════════════════
+let _mpLastBoxes  = [];   // últimas cajas detectadas por MediaPipe
+let _fpsFrames    = 0;
+let _fpsLast      = 0;
+let _faceLoopId   = null;
+
+// Callback de MediaPipe — solo guarda las bounding boxes (es sincrónico y muy rápido)
+function onMpResults(results){
+  _mpLastBoxes = (results.detections||[]).map(d=>{
+    const bb = d.boundingBox;
+    return {
+      x:      bb.xCenter - bb.width/2,
+      y:      bb.yCenter - bb.height/2,
+      width:  bb.width,
+      height: bb.height,
+      score:  d.score?.[0] || 0.9
+    };
+  });
+}
+
+async function runFaceLoop(){
+  const video   = document.getElementById('cam-feed');
+  const overlay = document.getElementById('face-overlay');
+  if(!video || !scanActive) return;
+
+  const ctx = overlay.getContext('2d');
+
+  // Sincronizar canvas
+  const sync = ()=>{
+    const vw=video.videoWidth||640, vh=video.videoHeight||480;
+    if(overlay.width!==vw){ overlay.width=vw; overlay.height=vh; }
+  };
+
+  // Estado de identidad por cara (para confirmación multi-frame)
+  // Usar mapa de posición → studentId → conteo
+  const idHistory = [];
+
+  // Throttle de reconocimiento face-api (pesado) — cada 250ms
+  let lastRecog = 0;
+  const RECOG_INTERVAL = 250;
+
+  // Cache de identidades recientes para no llamar face-api cada frame
+  let cachedIdentities = []; // [{box, studentId, dist, confPct}]
+
+  const loop = async () => {
+    if(!scanActive){ ctx.clearRect(0,0,overlay.width,overlay.height); return; }
+    sync();
+    _fpsFrames++;
+    const now = performance.now();
+
+    // ── FPS counter cada segundo
+    if(now - _fpsLast >= 1000){
+      const fps = Math.round(_fpsFrames * 1000 / (now - _fpsLast));
+      const fpsEl = document.getElementById('fps-val');
+      if(fpsEl) fpsEl.textContent = fps;
+      _fpsFrames = 0;
+      _fpsLast   = now;
+    }
+
+    // ── 1. MediaPipe: detectar caras (ultrarrápido, ~5ms)
+    if(mpReady && mpDetector){
+      try{ await mpDetector.send({image: video}); } catch(e){}
+    }
+
+    // ── 2. face-api: reconocer identidades (cada 250ms)
+    if(faceMatcher && now - lastRecog >= RECOG_INTERVAL){
+      lastRecog = now;
+      try{
+        const useSSD = ssdReady && faceapi.nets.ssdMobilenetv1.isLoaded;
+        const detOpts = useSSD
+          ? new faceapi.SsdMobilenetv1Options({minConfidence:0.4})
+          : new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.4, inputSize:320});
+
+        const detections = await faceapi
+          .detectAllFaces(video, detOpts)
+          .withFaceDescriptors();
+
+        cachedIdentities = detections.map(det=>{
+          const box  = det.detection.box;
+          const match= faceMatcher.findBestMatch(det.descriptor);
+          const dist = match.distance;
+          const isMatch = match.label !== 'unknown';
+          return {
+            box,
+            studentId: isMatch ? match.label : null,
+            dist,
+            confPct: isMatch ? Math.max(0,Math.min(100,Math.round((1-dist/FR_THRESHOLD)*100))) : 0
+          };
+        });
+
+        // ── Auto-marcar asistencia con confirmación multi-frame
+        cachedIdentities.forEach(ci=>{
+          if(!ci.studentId) return;
+          confirmBuffer[ci.studentId] = (confirmBuffer[ci.studentId]||0) + 1;
+          if(confirmBuffer[ci.studentId] >= FR_CONFIRM && !recentlyMarked.has(ci.studentId)){
+            recentlyMarked.add(ci.studentId);
+            confirmBuffer[ci.studentId] = 0;
+            const student = students.find(s=>s.id===ci.studentId);
+            if(student){
+              student.status='present';
+              fbSet('students',student.id,{status:'present',updatedAt:new Date().toISOString()});
+              renderTable(document.getElementById('att-search')?.value||'');
+              updateStats();
+              addDetectedPanel(student, ci.confPct);
+              showQuickToast(student.name);
+              if(typeof sendPushNotification==='function')
+                sendPushNotification('✓ Asistencia',student.name+' — presente');
+              setTimeout(()=>recentlyMarked.delete(ci.studentId), FR_COOLDOWN);
+            }
+          }
+        });
+        // Reset buffer caras no vistas
+        Object.keys(confirmBuffer).forEach(k=>{
+          if(!cachedIdentities.find(ci=>ci.studentId===k)) confirmBuffer[k]=0;
+        });
+      } catch(e){}
+    }
+
+    // ── 3. Dibujar en canvas
+    ctx.clearRect(0,0,overlay.width,overlay.height);
+    const vw = video.videoWidth||640, vh = video.videoHeight||480;
+
+    // Usar cajas de MediaPipe si disponibles, si no las de face-api
+    const drawBoxes = mpReady && _mpLastBoxes.length > 0
+      ? _mpLastBoxes.map(b=>({
+          x: b.x*vw, y: b.y*vh,
+          w: b.width*vw, h: b.height*vh,
+          score: b.score
+        }))
+      : cachedIdentities.map(ci=>({
+          x: ci.box.x, y: ci.box.y,
+          w: ci.box.width, h: ci.box.height,
+          score: 0.9
+        }));
+
+    // Actualizar HUD status
+    const hudDot   = document.getElementById('hud-dot');
+    const hudLabel = document.getElementById('hud-label');
+    if(hudDot && hudLabel){
+      if(drawBoxes.length>0){
+        hudDot.className='hud-dot';           // verde
+        hudLabel.textContent = drawBoxes.length===1 ? '1 CARA DETECTADA' : drawBoxes.length+' CARAS';
+      } else {
+        hudDot.className='hud-dot yellow';
+        hudLabel.textContent = faceMatcher ? 'BUSCANDO...' : 'SIN ROSTROS REGISTRADOS';
+      }
+    }
+
+    drawBoxes.forEach((b,i)=>{
+      // Buscar identidad para esta caja (por proximidad)
+      const identity = cachedIdentities.find(ci=>{
+        if(!ci.box) return false;
+        const cx1=b.x+b.w/2, cy1=b.y+b.h/2;
+        const cx2=ci.box.x+ci.box.width/2, cy2=ci.box.y+ci.box.height/2;
+        return Math.abs(cx1-cx2) < b.w*0.5 && Math.abs(cy1-cy2) < b.h*0.5;
+      });
+
+      const studentId = identity?.studentId || null;
+      const confPct   = identity?.confPct   || null;
+      const student   = studentId ? students.find(s=>s.id===studentId) : null;
+      const label     = student
+        ? student.name.split(' ').slice(0,2).join(' ')
+        : (identity ? 'Desconocido' : 'Detectado');
+      const color     = student
+        ? (confPct>=85 ? '#00E5A0' : '#7FFFD4')
+        : identity ? '#FF3D5A' : '#00B8FF';
+
+      drawScanBox(ctx, b.x, b.y, b.w, b.h, color, label, confPct, student);
+    });
+
+    _faceLoopId = requestAnimationFrame(loop);
+  };
+
+  _faceLoopId = requestAnimationFrame(loop);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  DIBUJAR CAJA DE ESCANEO CINEMATOGRÁFICA
+// ══════════════════════════════════════════════════════════════
+function drawScanBox(ctx, x, y, w, h, color, label, confPct, student){
+  const t   = performance.now();
+  const pad = Math.max(w,h)*0.08; // padding alrededor de la cara
+  x -= pad; y -= pad; w += pad*2; h += pad*2;
+
+  // ── Relleno semitransparente con gradiente
+  const grad = ctx.createLinearGradient(x, y, x, y+h);
+  grad.addColorStop(0,   hexToRgba(color, 0.10));
+  grad.addColorStop(0.5, hexToRgba(color, 0.04));
+  grad.addColorStop(1,   hexToRgba(color, 0.12));
+  ctx.fillStyle = grad;
+  ctx.beginPath(); ctx.rect(x,y,w,h); ctx.fill();
+
+  // ── Borde principal (rectángulo completo, semi-transparente)
+  ctx.strokeStyle = hexToRgba(color, 0.35);
+  ctx.lineWidth   = 1;
+  ctx.strokeRect(x, y, w, h);
+
+  // ── Esquinas gruesas (el efecto scanner real)
+  const cLen = Math.min(w,h) * 0.22;
+  const cW   = 3;
+  const r    = 6; // radio de las esquinas
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = cW;
+  ctx.lineCap     = 'round';
+
+  // Animación sutil de pulsación en las esquinas
+  const pulse = 0.85 + Math.sin(t*0.004)*0.15;
+  ctx.globalAlpha = pulse;
+
+  // Top-left
+  ctx.beginPath(); ctx.moveTo(x+cLen, y); ctx.lineTo(x+r, y);
+  ctx.arcTo(x,y,x,y+r,r); ctx.lineTo(x, y+cLen); ctx.stroke();
+  // Top-right
+  ctx.beginPath(); ctx.moveTo(x+w-cLen, y); ctx.lineTo(x+w-r, y);
+  ctx.arcTo(x+w,y,x+w,y+r,r); ctx.lineTo(x+w, y+cLen); ctx.stroke();
+  // Bottom-left
+  ctx.beginPath(); ctx.moveTo(x, y+h-cLen); ctx.lineTo(x, y+h-r);
+  ctx.arcTo(x,y+h,x+r,y+h,r); ctx.lineTo(x+cLen, y+h); ctx.stroke();
+  // Bottom-right
+  ctx.beginPath(); ctx.moveTo(x+w, y+h-cLen); ctx.lineTo(x+w, y+h-r);
+  ctx.arcTo(x+w,y+h,x+w-r,y+h,r); ctx.lineTo(x+w-cLen, y+h); ctx.stroke();
+
+  ctx.globalAlpha = 1;
+
+  // ── Línea de escaneo animada
+  const scanY = y + ((t % 2000) / 2000) * h;
+  const sg = ctx.createLinearGradient(x, 0, x+w, 0);
+  sg.addColorStop(0,   'transparent');
+  sg.addColorStop(0.3, hexToRgba(color, 0.5));
+  sg.addColorStop(0.5, hexToRgba(color, 0.9));
+  sg.addColorStop(0.7, hexToRgba(color, 0.5));
+  sg.addColorStop(1,   'transparent');
+  ctx.strokeStyle = sg;
+  ctx.lineWidth   = 1.5;
+  ctx.shadowColor = color;
+  ctx.shadowBlur  = 6;
+  ctx.beginPath(); ctx.moveTo(x, scanY); ctx.lineTo(x+w, scanY); ctx.stroke();
+  ctx.shadowBlur  = 0;
+
+  // ── Puntos en esquinas (indicador de estado)
+  const dotColor = confPct!==null ? (confPct>=85?'#00E5A0':confPct>=60?'#FFAA00':'#FF3D5A') : color;
+  [[x,y],[x+w,y],[x,y+h],[x+w,y+h]].forEach(([dx,dy])=>{
+    ctx.fillStyle = dotColor;
+    ctx.beginPath(); ctx.arc(dx,dy,3,0,Math.PI*2); ctx.fill();
+  });
+
+  // ── Etiqueta con nombre
+  const fontSize = Math.max(11, Math.min(15, w/7));
+  ctx.font = `700 ${fontSize}px 'Sora',sans-serif`;
+  const tw  = ctx.measureText(label).width;
+  const lPad= 9;
+  const lx  = x + w/2 - tw/2 - lPad;
+  const ly  = y - fontSize - 14;
+  const lw  = tw + lPad*2;
+  const lh  = fontSize + lPad*1.4;
+
+  // Fondo de etiqueta
+  ctx.fillStyle = hexToRgba(color, student ? 0.92 : 0.85);
+  ctx.shadowColor= color; ctx.shadowBlur=8;
+  roundRect(ctx, lx, ly, lw, lh, 6); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Texto de etiqueta
+  ctx.fillStyle     = student ? '#07101F' : '#fff';
+  ctx.textAlign     = 'left';
+  ctx.textBaseline  = 'middle';
+  ctx.fillText(label, lx+lPad, ly+lh/2);
+
+  // ── Barra de confianza bajo la caja
+  if(confPct!==null){
+    const barY = y+h+6, barH=3;
+    ctx.fillStyle='rgba(0,0,0,.35)';
+    roundRect(ctx,x,barY,w,barH,2); ctx.fill();
+    const barColor = confPct>=85?'#00E5A0':confPct>=60?'#FFAA00':'#FF3D5A';
+    ctx.fillStyle=barColor;
+    ctx.shadowColor=barColor; ctx.shadowBlur=4;
+    roundRect(ctx,x,barY,w*(confPct/100),barH,2); ctx.fill();
+    ctx.shadowBlur=0;
+
+    // Porcentaje
+    ctx.font=`600 9px 'JetBrains Mono',monospace`;
+    ctx.fillStyle=barColor; ctx.textAlign='right';
+    ctx.fillText(confPct+'%', x+w, barY+barH+10);
+  }
+}
+
+// Reemplazar stopCam para limpiar el nuevo loop
+// stopCam movido al motor IA v7
 
 // ═══════════════════════════════════════════════════════
 //  CAMERA SCAN MODAL
@@ -2177,20 +2582,28 @@ async function startScan(){
     const v=document.getElementById('cam-feed');
     v.srcObject=cameraStream;
     await new Promise((res,rej)=>{
-      v.onloadedmetadata=res;
-      v.onerror=rej;
-      setTimeout(res,3000); // timeout fallback
+      v.onloadedmetadata=res; v.onerror=rej; setTimeout(res,3000);
     });
     await v.play().catch(()=>{});
 
     document.getElementById('cam-ph').style.display='none';
-    document.getElementById('cam-sf').style.display='block';
+    const fpsHud=document.getElementById('cam-fps-hud');
+    if(fpsHud) fpsHud.style.display='block';
+    // HUD status → activo
+    const hdot=document.getElementById('hud-dot');
+    const hlbl=document.getElementById('hud-label');
+    if(hdot) hdot.className='hud-dot';
+    if(hlbl) hlbl.textContent='ACTIVO';
     scanActive=true;
+    _fpsLast=performance.now(); _fpsFrames=0;
 
     const btn=document.getElementById('btn-cam-start');
     btn.innerHTML=svgStop+' Detener'; btn.onclick=stopCam; btn.style.background='var(--danger)';
     st.className='cam-status info';
-    st.innerHTML=faceMatcher?svgInfo+'Escaneando rostros…':svgInfo+'Cámara activa. <strong>Registra rostros primero</strong> para poder reconocer.';
+    const engine = mpReady ? 'MediaPipe + SSD' : (ssdReady ? 'SSD MobileNet' : 'TinyFaceDetector');
+    st.innerHTML=svgInfo+(faceMatcher
+      ? `Escaneando con <strong>${engine}</strong>…`
+      : `Motor <strong>${engine}</strong> listo. <strong>Registra rostros</strong> para reconocer.`);
     runFaceLoop();
 
   }catch(err){
@@ -2412,29 +2825,33 @@ function hexToRgba(hex, alpha){
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-function addDetectedPanel(student){
-  const panel = document.getElementById('detected-panel');
-  const list = document.getElementById('detected-list');
+function addDetectedPanel(student, confPct){
+  const panel = document.getElementById('det-panel');
+  const list  = document.getElementById('det-list');
+  if(!panel || !list) return;
   panel.classList.remove('hidden');
-
-  // Check if already in list
   if(document.getElementById('dp-'+student.id)) return;
 
-  const db = (faces||{});
-  const face = db[student.id];
-  const av = face
+  const face = (faces||{})[student.id];
+  const avContent = face
     ? `<img src="${face.photo}" alt="${student.name}">`
-    : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${student.color}22;color:${student.color};font-size:11px;font-weight:700">${student.initials}</div>`;
+    : `<div class="det-av-init" style="background:${student.color||'#00E5A0'}22;color:${student.color||'#00E5A0'}">${(student.initials||'?').toUpperCase()}</div>`;
+
+  const conf = confPct!=null ? confPct : 100;
+  const confClass = conf>=85 ? 'conf-high' : 'conf-med';
+  const confLabel = conf>=85 ? `✓ ${conf}%` : `~ ${conf}%`;
+  const now = new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
 
   const item = document.createElement('div');
-  item.className = 'detected-item';
-  item.id = 'dp-'+student.id;
-  item.innerHTML = `
-    <div class="detected-avatar">${av}</div>
-    <div class="detected-name">${student.name}</div>
-    <div class="detected-badge">✓ Presente</div>`;
+  item.className='det-item'; item.id='dp-'+student.id;
+  item.innerHTML=`
+    <div class="det-av">${avContent}</div>
+    <div class="det-info">
+      <div class="det-name">${student.name}</div>
+      <div class="det-time">${now}</div>
+    </div>
+    <div class="det-badge ${confClass}">${confLabel}</div>`;
   list.insertBefore(item, list.firstChild);
-  item.style.animation = 'popIn .35s ease';
 }
 
 let toastTimeout;
@@ -2537,6 +2954,16 @@ init();
 // ══ SERVICE WORKER ════════════════════════════════════════════
 if('serviceWorker' in navigator){
   window.addEventListener('load', async ()=>{
+    // Solo registrar SW en dominios reales (no en preview de Claude ni file://)
+    const origin = location.hostname;
+    const isLocal = origin === 'localhost' || origin === '127.0.0.1' || 
+                    location.protocol === 'file:' ||
+                    origin.includes('claudeusercontent') ||
+                    origin.includes('claude.ai');
+    if(isLocal){
+      console.log('SW omitido en entorno de desarrollo/preview');
+      return;
+    }
     try{
       const reg = await navigator.serviceWorker.register('./sw.js');
       console.log('✓ SW registrado:', reg.scope);
