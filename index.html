@@ -2134,26 +2134,19 @@ async function loadMediaPipe(){
 // ── Cargar face-api con SSD MobileNet (mejor que TinyFaceDetector)
 async function loadFaceApiSSD(){
   try{
+    // Cargar TinyFaceDetector (rápido) + reconocimiento
+    // NO cargar SSD porque requiere más memoria y es más lento de inicializar
     await Promise.all([
-      faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL),
       faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
     ]);
     ssdReady = true;
-    console.log('✓ face-api SSD MobileNet cargado');
+    console.log('✓ face-api TinyFaceDetector + Recognition cargado');
     return true;
   } catch(e){
-    // Fallback a TinyFaceDetector si SSD falla
-    console.warn('SSD falló, cargando TinyFaceDetector como backup:', e.message);
-    try{
-      await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-        faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL),
-        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-      ]);
-      ssdReady = true;
-      return true;
-    } catch(e2){ return false; }
+    console.error('face-api falló:', e.message);
+    return false;
   }
 }
 
@@ -2244,71 +2237,59 @@ function onMpResults(results){
 async function runFaceLoop(){
   const video   = document.getElementById('cam-feed');
   const overlay = document.getElementById('face-overlay');
-  if(!video||!scanActive) return;
-  const ctx = overlay.getContext('2d');
-  overlay.style.transform = ''; // sin espejo en canvas
+  if(!video || !scanActive) return;
 
-  let cachedBoxes=[], cachedIdentities=[];
-  let lastDetect=0, lastRecog=0;
-  const DETECT_MS=80, RECOG_MS=300;
+  const ctx = overlay.getContext('2d');
+  // Canvas SIN transform — coordenadas absolutas del frame
+  overlay.style.transform = 'scaleX(-1)'; // espejamos canvas igual que video
+
+  let lastRecog  = 0;
+  const RECOG_MS = 200; // reconocimiento cada 200ms
+  let cachedDets = []; // [{box, studentId, confPct, color, label}]
 
   const loop = async ()=>{
     if(!scanActive){ ctx.clearRect(0,0,overlay.width,overlay.height); return; }
-    // Sync canvas
-    const vw=video.videoWidth||640, vh=video.videoHeight||480;
+
+    // Sync canvas size
+    const vw = video.videoWidth||640, vh = video.videoHeight||480;
     if(overlay.width!==vw||overlay.height!==vh){ overlay.width=vw; overlay.height=vh; }
-    // FPS
+
+    // FPS counter
     _fpsFrames++;
-    const now=performance.now();
+    const now = performance.now();
     if(now-_fpsLast>=1000){
       const el=document.getElementById('fps-val');
       if(el) el.textContent=Math.round(_fpsFrames*1000/(now-_fpsLast));
       _fpsFrames=0; _fpsLast=now;
     }
-    // ── DETECCIÓN ──────────────────────────────────────────
-    if(now-lastDetect>=DETECT_MS){
-      lastDetect=now;
-      let mpBoxes=[];
-      if(mpReady&&mpDetector){
-        try{
-          await mpDetector.send({image:video});
-          mpBoxes=_mpLastBoxes.map(b=>({
-            x:(1-b.x-b.width)*vw, y:b.y*vh,
-            w:b.width*vw, h:b.height*vh
-          }));
-        } catch(e){ mpBoxes=[]; }
-      }
-      if(mpBoxes.length>0){
-        cachedBoxes=mpBoxes;
-      } else {
-        try{
-          const dets=await faceapi.detectAllFaces(video,
-            new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.35,inputSize:320}));
-          cachedBoxes=dets.map(d=>({
-            x:vw-d.box.x-d.box.width, y:d.box.y,
-            w:d.box.width, h:d.box.height
-          }));
-        } catch(e){}
-      }
-    }
-    // ── RECONOCIMIENTO ────────────────────────────────────
-    if(cachedBoxes.length>0 && now-lastRecog>=RECOG_MS){
+
+    // ── DETECCIÓN + RECONOCIMIENTO cada RECOG_MS ─────────────
+    if(modelsLoaded && now-lastRecog>=RECOG_MS){
       lastRecog=now;
       try{
-        const withDesc=await faceapi
-          .detectAllFaces(video,new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.35,inputSize:320}))
-          .withFaceLandmarks(true).withFaceDescriptors();
-        if(faceMatcher&&withDesc.length>0){
-          cachedIdentities=withDesc.map(det=>{
-            const box=det.detection.box;
-            const match=faceMatcher.findBestMatch(det.descriptor);
-            const dist=match.distance;
-            const isMatch=match.label!=='unknown'&&dist<FR_THRESHOLD;
-            const confPct=isMatch?Math.max(0,Math.min(100,Math.round((1-dist/FR_THRESHOLD)*100))):null;
+        const opts = new faceapi.TinyFaceDetectorOptions({
+          scoreThreshold: 0.3,
+          inputSize: 320
+        });
+
+        let dets;
+        if(faceMatcher){
+          // Con reconocimiento
+          dets = await faceapi.detectAllFaces(video, opts)
+            .withFaceLandmarks(true)
+            .withFaceDescriptors();
+          cachedDets = dets.map(det=>{
+            const b   = det.detection.box;
+            const match = faceMatcher.findBestMatch(det.descriptor);
+            const dist  = match.distance;
+            const isMatch = match.label!=='unknown' && dist<FR_THRESHOLD;
+            const confPct = isMatch
+              ? Math.max(0,Math.min(100,Math.round((1-dist/FR_THRESHOLD)*100)))
+              : null;
             if(isMatch){
-              const sid=match.label;
+              const sid = match.label;
               confirmBuffer[sid]=(confirmBuffer[sid]||0)+1;
-              if(confirmBuffer[sid]>=FR_CONFIRM&&!recentlyMarked.has(sid)){
+              if(confirmBuffer[sid]>=FR_CONFIRM && !recentlyMarked.has(sid)){
                 recentlyMarked.add(sid); confirmBuffer[sid]=0;
                 const stu=students.find(s=>s.id===sid);
                 if(stu){
@@ -2322,46 +2303,56 @@ async function runFaceLoop(){
                 }
               }
             }
+            const stu=isMatch?students.find(s=>s.id===match.label):null;
             return {
-              box:{x:vw-box.x-box.width,y:box.y,width:box.width,height:box.height},
-              studentId:isMatch?match.label:null, confPct
+              x:b.x, y:b.y, w:b.width, h:b.height,
+              label: stu?stu.name.split(' ').slice(0,2).join(' '):(isMatch?'...':'Desconocido'),
+              color: stu?(confPct>=85?'#00E5A0':'#7FFFD4'):'#FF3D5A',
+              confPct
             };
           });
-        } else if(!faceMatcher){ cachedIdentities=[]; }
-        Object.keys(confirmBuffer).forEach(k=>{
-          if(!cachedIdentities.find(ci=>ci.studentId===k)) confirmBuffer[k]=0;
-        });
-      } catch(e){ console.warn('Recog:',e.message); }
+          Object.keys(confirmBuffer).forEach(k=>{
+            if(!cachedDets.find(d=>{
+              const stu=students.find(s=>s.name.split(' ').slice(0,2).join(' ')===d.label);
+              return stu?.id===k;
+            })) confirmBuffer[k]=0;
+          });
+        } else {
+          // Solo detección (sin reconocimiento aún)
+          dets = await faceapi.detectAllFaces(video, opts);
+          cachedDets = dets.map(det=>({
+            x:det.box.x, y:det.box.y, w:det.box.width, h:det.box.height,
+            label:'Detectado', color:'#00B8FF', confPct:null
+          }));
+        }
+      } catch(e){ /* mantener último resultado */ }
     }
-    // ── DIBUJAR ────────────────────────────────────────────
+
+    // ── DIBUJAR ──────────────────────────────────────────────
     ctx.clearRect(0,0,overlay.width,overlay.height);
+
+    // HUD
     const dot=document.getElementById('hud-dot');
     const lbl=document.getElementById('hud-label');
     if(dot&&lbl){
-      if(cachedBoxes.length>0){
-        dot.className='hud-dot';
-        lbl.textContent=cachedBoxes.length===1?'1 CARA DETECTADA':cachedBoxes.length+' CARAS';
+      if(!modelsLoaded){
+        dot.className='hud-dot yellow'; lbl.textContent='CARGANDO IA…';
+      } else if(cachedDets.length>0){
+        dot.className='hud-dot'; lbl.textContent=cachedDets.length===1?'1 CARA':''+cachedDets.length+' CARAS';
       } else {
-        dot.className='hud-dot yellow';
-        lbl.textContent=faceMatcher?'BUSCANDO...':'ACERCA TU CARA';
+        dot.className='hud-dot yellow'; lbl.textContent=faceMatcher?'BUSCANDO...':'ACERCA TU CARA';
       }
     }
-    cachedBoxes.forEach(b=>{
-      const ident=cachedIdentities.find(ci=>{
-        const cx1=b.x+b.w/2,cy1=b.y+b.h/2;
-        const cx2=ci.box.x+ci.box.width/2,cy2=ci.box.y+ci.box.height/2;
-        return Math.abs(cx1-cx2)<b.w*0.6&&Math.abs(cy1-cy2)<b.h*0.6;
-      });
-      const sid=ident?.studentId||null;
-      const conf=ident?.confPct??null;
-      const stu=sid?students.find(s=>s.id===sid):null;
-      const label=stu?stu.name.split(' ').slice(0,2).join(' '):(ident?'Desconocido':'Detectado');
-      const color=stu?(conf>=85?'#00E5A0':'#7FFFD4'):(ident?'#FF3D5A':'#00B8FF');
-      drawScanBox(ctx,b.x,b.y,b.w,b.h,color,label,conf,stu);
+
+    cachedDets.forEach(d=>{
+      drawScanBox(ctx, d.x, d.y, d.w, d.h, d.color, d.label, d.confPct,
+        d.label!=='Detectado'&&d.label!=='Desconocido');
     });
-    _faceLoopId=requestAnimationFrame(loop);
+
+    _faceLoopId = requestAnimationFrame(loop);
   };
-  _faceLoopId=requestAnimationFrame(loop);
+
+  _faceLoopId = requestAnimationFrame(loop);
 }
 
 function drawScanBox(ctx, x, y, w, h, color, label, confPct, student){
@@ -2494,82 +2485,96 @@ function closeCamModal(){
   btn.innerHTML=svgCam+' Iniciar cámara'; btn.onclick=startScan; btn.style.background='var(--accent)';
 }
 async function startScan(){
-  const loadEl=document.getElementById('model-loading');
-  const st=document.getElementById('cam-st');
+  const loadEl = document.getElementById('model-loading');
+  const loadTx = document.getElementById('model-loading-txt');
+  const st     = document.getElementById('cam-st');
+  const ph     = document.getElementById('cam-ph');
 
-  // Check if camera API exists
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+  if(!navigator.mediaDevices?.getUserMedia){
     st.className='cam-status error';
-    const isFile=location.protocol==='file:';
-    st.innerHTML=svgX+(isFile
-      ?'<strong>Abre la app desde GitHub Pages</strong>, no desde un archivo local. La cámara no funciona en file://'
-      :'Tu navegador no soporta cámara. Usa Chrome o Firefox actualizado.');
+    st.innerHTML=svgX+(location.protocol==='file:'
+      ?'<strong>Abre desde GitHub Pages</strong> — la cámara no funciona en file://'
+      :'Navegador no soporta cámara. Usa Chrome.');
     return;
   }
 
-  if(!modelsLoaded) loadEl.classList.remove('hidden');
-
+  // ── PASO 1: Obtener stream y mostrar video YA ─────────────
+  let stream;
   try{
-    // Try with ideal constraints first, fall back to basic
-    let stream;
     try{
-      stream=await navigator.mediaDevices.getUserMedia({
-        video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false
+      stream = await navigator.mediaDevices.getUserMedia({
+        video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:720},
+                frameRate:{ideal:30, min:15} },
+        audio:false
       });
-    }catch(e1){
-      // Fallback: just ask for any video
-      stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+    } catch(e){
+      stream = await navigator.mediaDevices.getUserMedia({video:true, audio:false});
     }
-
-    await loadModels();
-    await buildDescriptors();
-    loadEl.classList.add('hidden');
-    cameraStream=stream;
-    const v=document.getElementById('cam-feed');
-    v.srcObject=cameraStream;
-    await new Promise((res,rej)=>{
-      v.onloadedmetadata=res; v.onerror=rej; setTimeout(res,3000);
-    });
-    await v.play().catch(()=>{});
-
-    document.getElementById('cam-ph').style.display='none';
-    const fpsHud=document.getElementById('cam-fps-hud');
-    if(fpsHud) fpsHud.style.display='block';
-    // HUD status → activo
-    const hdot=document.getElementById('hud-dot');
-    const hlbl=document.getElementById('hud-label');
-    if(hdot) hdot.className='hud-dot';
-    if(hlbl) hlbl.textContent='ACTIVO';
-    scanActive=true;
-    _fpsLast=performance.now(); _fpsFrames=0;
-
-    const btn=document.getElementById('btn-cam-start');
-    btn.innerHTML=svgStop+' Detener'; btn.onclick=stopCam; btn.style.background='var(--danger)';
-    st.className='cam-status info';
-    const engine = mpReady ? 'MediaPipe + SSD' : (ssdReady ? 'SSD MobileNet' : 'TinyFaceDetector');
-    st.innerHTML=svgInfo+(faceMatcher
-      ? `Escaneando con <strong>${engine}</strong>…`
-      : `Motor <strong>${engine}</strong> listo. <strong>Registra rostros</strong> para reconocer.`);
-    runFaceLoop();
-
-  }catch(err){
-    loadEl.classList.add('hidden');
+  } catch(err){
     st.className='cam-status error';
-    let msg='No se pudo acceder a la cámara. ';
-    if(err.name==='NotAllowedError'||err.name==='PermissionDeniedError')
-      msg+='<strong>Permiso denegado</strong> — ve a la barra del navegador, clic en el candado 🔒 y permite la cámara.';
-    else if(err.name==='NotFoundError'||err.name==='DevicesNotFoundError')
-      msg+='No se encontró ninguna cámara en este dispositivo.';
-    else if(err.name==='NotReadableError'||err.name==='TrackStartError')
-      msg+='La cámara está siendo usada por otra app. Ciérrala e intenta de nuevo.';
-    else if(location.protocol==='file:')
-      msg+='<strong>Abre desde GitHub Pages</strong>, no desde un archivo local (file://).';
+    if(err.name==='NotAllowedError')
+      st.innerHTML=svgX+'<strong>Permiso denegado</strong> — clic en el candado 🔒 → Permitir cámara.';
+    else if(err.name==='NotFoundError')
+      st.innerHTML=svgX+'No se encontró cámara en este dispositivo.';
+    else if(err.name==='NotReadableError')
+      st.innerHTML=svgX+'Cámara en uso por otra app. Ciérrala e intenta de nuevo.';
     else
-      msg+=err.message||err.name||'Error desconocido.';
-    st.innerHTML=svgX+msg;
+      st.innerHTML=svgX+'Error: '+(err.message||err.name);
     console.error('Camera error:',err);
+    return;
   }
+
+  // Asignar stream al video INMEDIATAMENTE antes de cargar modelos
+  cameraStream = stream;
+  const v = document.getElementById('cam-feed');
+  v.srcObject = stream;
+  v.onloadedmetadata = ()=> v.play().catch(()=>{});
+  // Esperar a que el video tenga dimensiones reales
+  await new Promise(res=>{
+    if(v.readyState >= 2){ res(); return; }
+    v.addEventListener('loadeddata', res, {once:true});
+    setTimeout(res, 1500); // timeout de seguridad
+  });
+
+  // Mostrar video, ocultar placeholder
+  if(ph) ph.style.display='none';
+  const fpsHud = document.getElementById('cam-fps-hud');
+  if(fpsHud) fpsHud.style.display='block';
+  const hdot = document.getElementById('hud-dot');
+  const hlbl = document.getElementById('hud-label');
+  if(hdot) hdot.className='hud-dot yellow';
+  if(hlbl) hlbl.textContent='CARGANDO IA…';
+
+  const btn = document.getElementById('btn-cam-start');
+  if(btn){ btn.innerHTML=svgStop+' Detener'; btn.onclick=stopCam; btn.style.background='var(--danger)'; }
+
+  // ── PASO 2: Cargar modelos en segundo plano ───────────────
+  scanActive = true;
+  _fpsLast = performance.now(); _fpsFrames = 0;
+
+  // Iniciar loop de detección inmediatamente (básico sin reconocimiento)
+  runFaceLoop();
+
+  // Cargar modelos sin bloquear el video
+  if(!modelsLoaded){
+    if(loadEl) loadEl.classList.remove('hidden');
+    if(loadTx) loadTx.textContent = 'Cargando detector…';
+    await loadModels();
+    if(loadTx) loadTx.textContent = 'Preparando rostros…';
+    await buildDescriptors();
+    if(loadEl) loadEl.classList.add('hidden');
+  } else {
+    await buildDescriptors();
+  }
+
+  if(hdot) hdot.className='hud-dot';
+  if(hlbl) hlbl.textContent='ACTIVO';
+  st.className='cam-status info';
+  st.innerHTML=svgInfo+(faceMatcher
+    ?'Escaneando con <strong>IA lista</strong> — buscando rostros registrados…'
+    :'Cámara activa. <strong>Registra rostros</strong> en Estudiantes para reconocer.');
 }
+
 
 async function runFaceLoop(){
   const video   = document.getElementById('cam-feed');
