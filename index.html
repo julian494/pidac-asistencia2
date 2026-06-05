@@ -501,12 +501,13 @@ canvas.face-overlay{
 
 /* Stream de la ESP32 dentro del modal de escaneo */
 .esp-stream-layer{
-  position:absolute;inset:0;z-index:2;
+  position:absolute;inset:0;z-index:10;
   display:none;
+  background:#040a14;
 }
 .esp-stream-layer.active{display:block}
 .esp-stream-layer img{
-  width:100%;height:100%;object-fit:cover;display:block;
+  width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;
 }
 .esp-source-tab{
   display:flex;gap:6px;background:var(--surface2);
@@ -3432,15 +3433,28 @@ function espActivateStream(){
       setTimeout(()=>{ img.src='http://'+ESP.ip+':81/stream?t='+Date.now(); }, 2000);
     }
   };
-  img.src = 'http://'+ESP.ip+':81/stream';
+  img.src = 'http://'+ESP.ip+':81/stream?t='+Date.now();
   layer.classList.add('active');
+  // Esconder video local para que no tape el stream ESP32
+  const vid = document.getElementById('cam-feed');
+  if(vid){ vid.style.display='none'; vid.srcObject=null; }
+  // Asegurar que la capa esté visible sobre el canvas
+  layer.style.zIndex = '10';
+  layer.style.position = 'absolute';
+  layer.style.inset = '0';
+  layer.style.display = 'block';
+  const ph = document.getElementById('cam-ph');
+  if(ph) ph.style.display='none';
 }
 
 function espDeactivateStream(){
   const layer = document.getElementById('esp-stream-layer');
   const img   = document.getElementById('esp-stream-img');
-  if(layer) layer.classList.remove('active');
+  if(layer){ layer.classList.remove('active'); layer.style.display='none'; }
   if(img){ img.src=''; }
+  // Restaurar video local
+  const vid = document.getElementById('cam-feed');
+  if(vid) vid.style.display='block';
 }
 
 // ── Cambiar fuente de cámara (local ↔ ESP32)
