@@ -2392,11 +2392,13 @@ async function runFaceLoop(){
     if(!scanActive){ ctx.clearRect(0,0,overlay.width,overlay.height); return; }
 
     // Sync canvas size
-    // Fuente: cámara local o ESP32-CAM
+    // Fuente: ESP32-CAM stream o cámara local
     const espImg = window._espScanActive ? document.getElementById('esp-stream-img') : null;
-    const src    = (espImg && espImg.complete && espImg.naturalWidth>0) ? espImg : video;
-    const vw = (src===video ? video.videoWidth : espImg.naturalWidth) || 640;
-    const vh = (src===video ? video.videoHeight: espImg.naturalHeight)|| 480;
+    // Para ESP32: usar el img del stream si tiene dimensiones válidas
+    const useEsp = espImg && espImg.naturalWidth > 0 && espImg.naturalHeight > 0;
+    const src    = useEsp ? espImg : video;
+    const vw = useEsp ? espImg.naturalWidth  : (video.videoWidth  || 640);
+    const vh = useEsp ? espImg.naturalHeight : (video.videoHeight || 480);
     if(overlay.width!==vw||overlay.height!==vh){ overlay.width=vw; overlay.height=vh; }
 
     // FPS counter
@@ -2635,6 +2637,44 @@ async function startScan(){
   const st     = document.getElementById('cam-st');
   const ph     = document.getElementById('cam-ph');
 
+  // ── Si ESP32 está seleccionado, usar su stream directamente
+  if(ESP.source === 'esp32' && ESP.ip && ESP.live){
+    if(ph) ph.style.display='none';
+    // Activar capa del stream ESP32
+    espActivateStream();
+    window._espScanActive = true;
+    // Mostrar HUD activo
+    const fpsHud = document.getElementById('cam-fps-hud');
+    if(fpsHud) fpsHud.style.display='block';
+    const hdot = document.getElementById('hud-dot');
+    const hlbl = document.getElementById('hud-label');
+    if(hdot) hdot.className='hud-dot';
+    if(hlbl) hlbl.textContent='ESP32-CAM ACTIVO';
+    const btn = document.getElementById('btn-cam-start');
+    if(btn){ btn.innerHTML=svgStop+' Detener'; btn.onclick=stopCam; btn.style.background='var(--danger)'; }
+    st.className='cam-status info';
+    scanActive = true;
+    _fpsLast = performance.now(); _fpsFrames = 0;
+    // Cargar modelos y reconocimiento en segundo plano
+    if(!modelsLoaded){
+      if(loadEl) loadEl.classList.remove('hidden');
+      if(loadTx) loadTx.textContent='Cargando IA...';
+      await loadModels();
+      if(loadTx) loadTx.textContent='Preparando rostros...';
+      await buildDescriptors();
+      if(loadEl) loadEl.classList.add('hidden');
+    } else {
+      await buildDescriptors();
+    }
+    if(hdot) hdot.className='hud-dot';
+    if(hlbl) hlbl.textContent='ESP32-CAM ACTIVO';
+    st.innerHTML=svgInfo+(faceMatcher
+      ?'ESP32-CAM activa con <strong>IA lista</strong> — reconociendo rostros…'
+      :'ESP32-CAM activa. <strong>Registra rostros</strong> para reconocer.');
+    runFaceLoop();
+    return; // no abrir cámara local
+  }
+
   if(!navigator.mediaDevices?.getUserMedia){
     st.className='cam-status error';
     st.innerHTML=svgX+(location.protocol==='file:'
@@ -2643,7 +2683,7 @@ async function startScan(){
     return;
   }
 
-  // ── PASO 1: Obtener stream y mostrar video YA ─────────────
+  // ── PASO 1: Obtener stream local y mostrar video YA ───────
   let stream;
   try{
     try{
@@ -2669,19 +2709,17 @@ async function startScan(){
     return;
   }
 
-  // Asignar stream al video INMEDIATAMENTE antes de cargar modelos
+  // Asignar stream al video INMEDIATAMENTE
   cameraStream = stream;
   const v = document.getElementById('cam-feed');
   v.srcObject = stream;
   v.onloadedmetadata = ()=> v.play().catch(()=>{});
-  // Esperar a que el video tenga dimensiones reales
   await new Promise(res=>{
     if(v.readyState >= 2){ res(); return; }
     v.addEventListener('loadeddata', res, {once:true});
-    setTimeout(res, 1500); // timeout de seguridad
+    setTimeout(res, 1500);
   });
 
-  // Mostrar video, ocultar placeholder
   if(ph) ph.style.display='none';
   const fpsHud = document.getElementById('cam-fps-hud');
   if(fpsHud) fpsHud.style.display='block';
@@ -2962,6 +3000,8 @@ function showQuickToast(name){
 
 function stopCam(){
   scanActive=false;
+  window._espScanActive=false;
+  espDeactivateStream();
   if(scanLoop){cancelAnimationFrame(scanLoop);scanLoop=null;}
   if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
   const v=document.getElementById('cam-feed'); if(v) v.srcObject=null;
