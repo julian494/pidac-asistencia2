@@ -3181,12 +3181,27 @@ function checkNotifBanner(){
       <span class="esp-s-fps" id="espFpsLbl"></span>
     </div>
 
+    <!-- IP manual -->
+    <div style="display:flex;gap:7px">
+      <input type="text" id="espManualIp" placeholder="10.131.184.133"
+        style="flex:1;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);
+               border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none"
+        onkeydown="if(event.key==='Enter') espConnect(document.getElementById('espManualIp').value)">
+      <button class="esp-btn esp-btn-g" style="width:auto;padding:9px 14px" 
+              onclick="espConnect(document.getElementById('espManualIp').value)">
+        Conectar
+      </button>
+    </div>
+
     <!-- Botón auto-detectar (lee Firebase) -->
-    <button class="esp-btn esp-btn-g" id="espAutoBtn" onclick="espAutoDetect()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/>
+    <button class="esp-btn" id="espAutoBtn" onclick="espAutoDetect()"
+      style="background:var(--surface2);border:1px solid var(--border);color:var(--text);width:100%;
+             padding:9px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;
+             font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
-      Detectar ESP32-CAM automáticamente
+      Detectar automáticamente
     </button>
 
     <div class="esp-scan-res" id="espScanRes"></div>
@@ -3283,7 +3298,7 @@ async function espAutoDetect(){
   // 2. Escaneo de red local
   res.innerHTML = '🔍 Escaneando red local…';
   const saved = localStorage.getItem('pidac_esp_ip') || '';
-  let bases = ['192.168.1','192.168.0','10.0.0','192.168.100'];
+  let bases = ['10.131.184','10.0.0','192.168.1','192.168.0','192.168.100','172.20.10'];
   if(saved){ const p=saved.split('.'); if(p.length===4) bases.unshift(p.slice(0,3).join('.')); }
 
   const found = [];
@@ -3434,7 +3449,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   const saved = localStorage.getItem('pidac_esp_ip');
   if(saved){
     espSetStatus('','Última: '+saved);
-    // Intentar reconectar silenciosamente
+    const inp = document.getElementById('espManualIp');
+    if(inp) inp.value = saved;
     setTimeout(()=> espConnect(saved, true), 2000);
   }
 });
