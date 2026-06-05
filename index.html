@@ -3412,39 +3412,49 @@ function espCtrl(v,val){
 function espActivateStream(){
   if(!ESP.ip) return;
   const layer = document.getElementById('esp-stream-layer');
-  const img   = document.getElementById('esp-stream-img');
-  if(!layer || !img) return;
+  if(!layer) return;
 
-  // Usar el stream ESP32 como fuente para face-api
-  img.onload = function(){
-    if(ESP.source==='esp32'){
-      ESP.fc++;
-      const now = performance.now();
-      if(!ESP.t0) ESP.t0 = now;
-      if(now - ESP.t0 >= 1000){
-        document.getElementById('espFpsLbl').textContent =
-          Math.round(ESP.fc*1000/(now-ESP.t0))+' fps';
-        ESP.fc=0; ESP.t0=now;
-      }
-    }
-  };
-  img.onerror = function(){
-    if(ESP.source==='esp32'){
-      setTimeout(()=>{ img.src='http://'+ESP.ip+'/stream?t='+Date.now(); }, 2000);
-    }
-  };
-  img.src = 'http://'+ESP.ip+'/stream?t='+Date.now();
-  layer.classList.add('active');
-  // Esconder video local para que no tape el stream ESP32
+  // Esconder video local
   const vid = document.getElementById('cam-feed');
   if(vid){ vid.style.display='none'; vid.srcObject=null; }
-  // Asegurar que la capa esté visible sobre el canvas
-  layer.style.zIndex = '10';
-  layer.style.position = 'absolute';
-  layer.style.inset = '0';
-  layer.style.display = 'block';
   const ph = document.getElementById('cam-ph');
   if(ph) ph.style.display='none';
+
+  // Mostrar capa
+  layer.style.cssText='position:absolute;inset:0;z-index:10;display:block;background:#040a14';
+  layer.classList.add('active');
+
+  // Usar iframe — funciona con mixed content mejor que img
+  const streamUrl = 'http://'+ESP.ip+'/stream';
+  layer.innerHTML =
+    '<iframe src="'+streamUrl+'" '+
+    'style="width:100%;height:100%;border:none;display:block;" '+
+    'id="esp-iframe"></iframe>'+
+    '<canvas id="esp-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2"></canvas>'+
+    '<div style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,.65);'+
+    'color:#00e5a0;font-size:10px;font-weight:700;border-radius:6px;'+
+    'padding:2px 8px;font-family:monospace;z-index:3">ESP32-CAM LIVE</div>';
+
+  // Para face-api, necesitamos capturar frames del iframe
+  // Usamos el img oculto para el reconocimiento facial
+  const img = document.getElementById('esp-stream-img');
+  if(img){
+    img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;z-index:1';
+    img.onload = function(){
+      ESP.fc++;
+      const now=performance.now();
+      if(!ESP.t0) ESP.t0=now;
+      if(now-ESP.t0>=1000){
+        const fpsel=document.getElementById('espFpsLbl');
+        if(fpsel) fpsel.textContent=Math.round(ESP.fc*1000/(now-ESP.t0))+' fps';
+        ESP.fc=0; ESP.t0=now;
+      }
+    };
+    img.onerror=function(){
+      if(ESP.source==='esp32') setTimeout(()=>{img.src='http://'+ESP.ip+'/stream?t='+Date.now();},3000);
+    };
+    img.src='http://'+ESP.ip+'/stream?t='+Date.now();
+  }
 }
 
 function espDeactivateStream(){
