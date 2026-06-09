@@ -541,6 +541,91 @@ canvas.face-overlay{
 }
 /* ══ FIN ESP32-CAM ════════════════════════════════════════════ */
 
+
+/* ══ SISTEMA DE ROLES ════════════════════════════════════════ */
+.admin-only { display:flex !important; }
+.teacher-only { display:none !important; }
+body.role-teacher .admin-only { display:none !important; }
+body.role-teacher .teacher-only { display:flex !important; }
+body.role-teacher .nav-item[id="nav-database"] { display:none; }
+body.role-teacher .nav-item[id="nav-accounts"] { display:none; }
+
+/* Badge de rol en sidebar */
+.role-badge {
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:9px;font-weight:700;letter-spacing:.4px;
+  padding:2px 8px;border-radius:20px;margin-top:2px;
+  text-transform:uppercase;
+}
+.role-badge.admin { background:rgba(168,85,247,.15);color:#a855f7;border:1px solid rgba(168,85,247,.3); }
+.role-badge.teacher { background:rgba(0,184,255,.15);color:var(--accent2);border:1px solid rgba(0,184,255,.3); }
+
+/* Vista profesor — estadísticas */
+.teacher-stats-grid {
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;
+  margin-bottom:1.25rem;
+}
+.teacher-stat-card {
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:14px;display:flex;flex-direction:column;gap:4px;
+}
+.teacher-stat-card .ts-val {
+  font-size:28px;font-weight:800;line-height:1;
+}
+.teacher-stat-card .ts-lbl {
+  font-size:11px;color:var(--muted);
+}
+.teacher-stat-card .ts-sub {
+  font-size:10px;color:var(--muted);margin-top:2px;
+}
+
+/* Tabla de asistencia readonly para profesor */
+.att-row-readonly { pointer-events:none; }
+.att-row-readonly .status-btn { opacity:.6;cursor:default; }
+
+/* Tarjetas de cuenta mejoradas */
+.acc-card {
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px;
+  transition:border-color .2s;
+}
+.acc-card:hover { border-color:rgba(0,229,160,.25); }
+.acc-card-av {
+  width:40px;height:40px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;
+}
+.acc-card-info { flex:1;min-width:0; }
+.acc-card-name { font-size:13px;font-weight:600; }
+.acc-card-meta { font-size:11px;color:var(--muted);margin-top:2px; }
+.acc-card-role {
+  font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;
+  text-transform:uppercase;letter-spacing:.3px;
+}
+.acc-card-role.teacher { background:rgba(0,184,255,.12);color:var(--accent2);border:1px solid rgba(0,184,255,.25); }
+.acc-card-role.student { background:rgba(168,85,247,.12);color:#a855f7;border:1px solid rgba(168,85,247,.25); }
+.acc-card-actions { display:flex;gap:6px; }
+.acc-act-btn {
+  width:32px;height:32px;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface2);cursor:pointer;display:flex;align-items:center;
+  justify-content:center;transition:all .15s;
+}
+.acc-act-btn svg { width:14px;height:14px;color:var(--muted); }
+.acc-act-btn:hover { border-color:var(--accent);background:rgba(0,229,160,.08); }
+.acc-act-btn:hover svg { color:var(--accent); }
+.acc-act-btn.del:hover { border-color:var(--danger);background:rgba(255,61,90,.08); }
+.acc-act-btn.del:hover svg { color:var(--danger); }
+
+/* Sección de base de datos mejorada */
+.db-section-hdr {
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);
+}
+.db-section-title {
+  font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;
+}
+.db-section-title svg { width:15px;height:15px;color:var(--accent); }
+/* ══ FIN ROLES ════════════════════════════════════════════════ */
+
 </style>
 </head>
 <body onload="onBodyLoad()">
@@ -610,6 +695,9 @@ canvas.face-overlay{
       <div class="nav-sec">Principal</div>
       <div class="nav-item active" id="nav-dashboard" onclick="showView('dashboard',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard
+      </div>
+      <div class="nav-item" id="nav-teacher" onclick="showView('teacher',this)" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>Mi Clase
       </div>
       <div class="nav-item" id="nav-attendance" onclick="showView('attendance',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Asistencia
@@ -700,7 +788,64 @@ canvas.face-overlay{
     </div>
 
     <!-- ESTUDIANTES -->
+    <!-- ══ VISTA PROFESOR ═══════════════════════════════════════ -->
+    <div id="view-teacher" class="view">
+      <!-- Stats del profesor -->
+      <div class="teacher-stats-grid" id="teacher-stats-grid">
+        <div class="teacher-stat-card">
+          <div class="ts-val" id="ts-present" style="color:var(--accent)">0</div>
+          <div class="ts-lbl">Presentes hoy</div>
+          <div class="ts-sub" id="ts-present-pct">—</div>
+        </div>
+        <div class="teacher-stat-card">
+          <div class="ts-val" id="ts-absent" style="color:var(--danger)">0</div>
+          <div class="ts-lbl">Ausentes</div>
+          <div class="ts-sub" id="ts-absent-pct">—</div>
+        </div>
+        <div class="teacher-stat-card">
+          <div class="ts-val" id="ts-total" style="color:var(--accent2)">0</div>
+          <div class="ts-lbl">Total estudiantes</div>
+          <div class="ts-sub" id="ts-grade-name">Mi grado</div>
+        </div>
+        <div class="teacher-stat-card">
+          <div class="ts-val" id="ts-rate" style="color:var(--warn)">0%</div>
+          <div class="ts-lbl">Asistencia semanal</div>
+          <div class="ts-sub">Últimos 5 días</div>
+        </div>
+      </div>
+
+      <!-- Fecha y selector -->
+      <div class="att-date-bar" style="margin-bottom:1rem">
+        <input type="date" id="teacher-date" onchange="loadTeacherAttendance(this.value)">
+        <span id="teacher-saved-lbl" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+
+      <!-- Lista de asistencia readonly -->
+      <div class="toolbar" style="margin-bottom:12px">
+        <input class="search-inp" id="teacher-search" type="text"
+          placeholder="Buscar estudiante…" oninput="renderTeacherTable(this.value)">
+      </div>
+      <div id="teacher-att-table"></div>
+
+      <!-- Botón iniciar reconocimiento -->
+      <div style="margin-top:1rem">
+        <button class="btn-primary" style="width:100%" onclick="openCamModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Iniciar reconocimiento facial
+        </button>
+      </div>
+    </div>
+    <!-- ══ FIN VISTA PROFESOR ══════════════════════════════════ -->
+
     <div id="view-database" class="view">
+      <!-- Header mejorado base de datos -->
+      <div class="db-section-hdr">
+        <div class="db-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Base de datos de estudiantes
+        </div>
+        <span id="db-total-count" style="font-size:11px;color:var(--muted)"></span>
+      </div>
       <div class="toolbar">
         <button class="btn-primary admin-only" onclick="openAddStudentModal()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
@@ -750,13 +895,30 @@ canvas.face-overlay{
     <div id="view-accounts" class="view">
       <div class="toolbar">
         <button class="btn-primary" onclick="openAccountModal('teacher')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>+ Profesor
-        </button>
-        <button class="btn-purple" onclick="openAccountModal('student')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>+ Estudiante
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          Nuevo Profesor
         </button>
       </div>
-      <div id="accounts-list"></div>
+
+      <!-- Sección profesores -->
+      <div class="db-section-hdr" style="margin-top:.5rem">
+        <div class="db-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          Profesores
+        </div>
+        <span id="teacher-count" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div id="teacher-list"></div>
+
+      <!-- Sección estudiantes con cuenta -->
+      <div class="db-section-hdr" style="margin-top:1rem">
+        <div class="db-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+          Estudiantes con acceso
+        </div>
+        <span id="student-acc-count" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div id="student-acc-list"></div>
     </div>
 
     <!-- REPORTES -->
@@ -1412,7 +1574,9 @@ function launchApp(){
   updateStats();
   renderDbGrid();
   populateAttGradeFilter();
-  showView('dashboard',document.getElementById('nav-dashboard'));
+  // Aplicar rol según el usuario
+  if(typeof applyRole === 'function') applyRole(currentUser?.role||'admin');
+  else showView('dashboard',document.getElementById('nav-dashboard'));
   checkNotifBanner();
   if(modelsLoaded) buildDescriptors();
   else loadModels().then(()=>buildDescriptors());
@@ -1874,6 +2038,11 @@ async function faceSave(){
 //  STATS & CHARTS
 // ═══════════════════════════════════════════════════════
 function updateStats(){
+  // También actualizar stats del profesor si está activo
+  if(currentUser?.role==='teacher' && typeof updateTeacherStats==='function'){
+    updateTeacherStats();
+    renderTeacherTable(document.getElementById('teacher-search')?.value||'');
+  }
   const p=students.filter(s=>s.status==='present').length;
   const a=students.filter(s=>s.status==='absent').length;
   const l=students.filter(s=>s.status==='late').length;
@@ -3522,5 +3691,250 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 <!-- ══ FIN ESP32-CAM PANEL ═══════════════════════════════════ -->
 
+
+</html
+// ════════════════════════════════════════════════════════════
+//  SISTEMA DE ROLES — Admin / Profesor
+// ════════════════════════════════════════════════════════════
+
+function applyRole(role){
+  const body = document.body;
+  body.classList.remove('role-admin','role-teacher');
+  body.classList.add('role-'+role);
+
+  // Badge de rol en sidebar
+  const badge = document.getElementById('sb-role-badge');
+  if(badge){
+    badge.textContent = role==='admin' ? 'Admin' : 'Profesor';
+    badge.className   = 'role-badge '+(role==='admin'?'admin':'teacher');
+  }
+
+  // Nav items visibles según rol
+  const navTeacher = document.getElementById('nav-teacher');
+  const navAccounts= document.getElementById('nav-accounts');
+  const navDb      = document.getElementById('nav-database');
+  const navReports = document.getElementById('nav-reports');
+
+  if(role==='teacher'){
+    if(navTeacher)  navTeacher.style.display='flex';
+    if(navAccounts) navAccounts.style.display='none';
+    if(navDb)       navDb.style.display='none';
+    // Ir directamente a vista profesor
+    showView('teacher', navTeacher);
+    initTeacherView();
+  } else {
+    if(navTeacher)  navTeacher.style.display='none';
+    if(navAccounts) navAccounts.style.display='flex';
+    if(navDb)       navDb.style.display='flex';
+    showView('dashboard', document.getElementById('nav-dashboard'));
+  }
+}
+
+// ── Vista del profesor
+function initTeacherView(){
+  const today = new Date().toISOString().split('T')[0];
+  const dateInp = document.getElementById('teacher-date');
+  if(dateInp && !dateInp.value) dateInp.value = today;
+  updateTeacherStats();
+  renderTeacherTable('');
+}
+
+function getTeacherStudents(){
+  // El profesor solo ve los estudiantes de su grado asignado
+  if(!currentUser || currentUser.role!=='teacher') return students;
+  const gradeId = currentUser.gradeId;
+  if(!gradeId) return students;
+  return students.filter(s=> s.gradeId === gradeId);
+}
+
+function updateTeacherStats(){
+  const myStudents = getTeacherStudents();
+  const total   = myStudents.length;
+  const present = myStudents.filter(s=>s.status==='present').length;
+  const absent  = total - present;
+  const pct     = total>0 ? Math.round(present/total*100) : 0;
+
+  const grade = grades.find(g=>g.id===currentUser?.gradeId);
+  const gradeName = grade ? grade.name : 'Todos los grados';
+
+  setEl('ts-present', present);
+  setEl('ts-absent',  absent);
+  setEl('ts-total',   total);
+  setEl('ts-rate',    pct+'%');
+  setEl('ts-present-pct', pct+'% asistencia');
+  setEl('ts-absent-pct',  Math.round(absent/Math.max(total,1)*100)+'% ausencia');
+  setEl('ts-grade-name',  gradeName);
+}
+
+function renderTeacherTable(filter=''){
+  const tbody = document.getElementById('teacher-att-table');
+  if(!tbody) return;
+  const myStudents = getTeacherStudents();
+  const filtered = filter
+    ? myStudents.filter(s=>s.name.toLowerCase().includes(filter.toLowerCase()))
+    : myStudents;
+
+  if(!filtered.length){
+    tbody.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;font-size:13px">Sin estudiantes en tu grado</div>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(s=>{
+    const isPres = s.status==='present';
+    const face   = (faces||{})[s.id];
+    const av     = face
+      ? `<img src="${face.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${s.color}22;color:${s.color};font-size:11px;font-weight:700;border-radius:50%">${s.initials}</div>`;
+    return `<div class="att-row" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:8px">
+      <div style="width:34px;height:34px;flex-shrink:0">${av}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+        <div style="font-size:11px;color:var(--muted)">${grades.find(g=>g.id===s.gradeId)?.name||'Sin grado'}</div>
+      </div>
+      <div style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;
+        background:${isPres?'rgba(0,229,160,.12)':'rgba(255,61,90,.1)'};
+        color:${isPres?'var(--accent)':'var(--danger)'};
+        border:1px solid ${isPres?'rgba(0,229,160,.3)':'rgba(255,61,90,.25)'}">
+        ${isPres?'✓ Presente':'Ausente'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function loadTeacherAttendance(dateKey){
+  if(!db||!dateKey) return;
+  try{
+    const snap = await db.collection('attendance').doc('att-'+dateKey).get();
+    if(snap.exists){
+      const data = snap.data();
+      (data.records||[]).forEach(r=>{
+        const s=students.find(x=>x.id===r.studentId);
+        if(s) s.status=r.status;
+      });
+      updateTeacherStats();
+      renderTeacherTable(document.getElementById('teacher-search')?.value||'');
+      const lbl=document.getElementById('teacher-saved-lbl');
+      if(lbl) lbl.textContent='Cargado: '+dateKey;
+    }
+  }catch(e){}
+}
+
+function setEl(id, val){ const el=document.getElementById(id); if(el) el.textContent=val; }
+
+// ── Render de cuentas mejorado
+function renderAccounts(){
+  const teachers = accounts.filter(a=>a.role==='teacher');
+  const stuAccs  = accounts.filter(a=>a.role==='student');
+
+  const tList = document.getElementById('teacher-list');
+  const sList = document.getElementById('student-acc-list');
+  const tCount= document.getElementById('teacher-count');
+  const sCount= document.getElementById('student-acc-count');
+
+  if(tCount) tCount.textContent = teachers.length+' cuenta'+(teachers.length!==1?'s':'');
+  if(sCount) sCount.textContent = stuAccs.length+' cuenta'+(stuAccs.length!==1?'s':'');
+
+  const renderCard = (acc)=>{
+    const grade = grades.find(g=>g.id===acc.gradeId);
+    const color = acc.role==='teacher'?'#00B8FF':'#a855f7';
+    const initials = acc.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    return `<div class="acc-card">
+      <div class="acc-card-av" style="background:${color}18;color:${color}">${initials}</div>
+      <div class="acc-card-info">
+        <div class="acc-card-name">${acc.name}</div>
+        <div class="acc-card-meta">
+          @${acc.username}
+          ${grade?' · '+grade.name:''}
+        </div>
+      </div>
+      <div class="acc-card-role ${acc.role}">${acc.role==='teacher'?'Profesor':'Estudiante'}</div>
+      <div class="acc-card-actions">
+        <button class="acc-act-btn" onclick="openAccountModal(null,'${acc.id}')" title="Editar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="acc-act-btn del" onclick="deleteAccount('${acc.id}')" title="Eliminar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+        </button>
+      </div>
+    </div>`;
+  };
+
+  if(tList) tList.innerHTML = teachers.length
+    ? teachers.map(renderCard).join('')
+    : '<div style="color:var(--muted);font-size:12px;padding:12px">Sin profesores registrados</div>';
+
+  if(sList) sList.innerHTML = stuAccs.length
+    ? stuAccs.map(renderCard).join('')
+    : '<div style="color:var(--muted);font-size:12px;padding:12px">Sin estudiantes con acceso</div>';
+}
+
+async function deleteAccount(id){
+  if(!confirm('¿Eliminar esta cuenta?')) return;
+  accounts = accounts.filter(a=>a.id!==id);
+  await fbDel('accounts', id);
+  renderAccounts();
+  showToast('Cuenta eliminada');
+}
+
+// ════════════════════════════════════════════════════════════
+//  MEJORA BASE DE DATOS — sección de rostros
+// ════════════════════════════════════════════════════════════
+function renderDbGrid(){
+  const grid = document.getElementById('db-grid');
+  if(!grid) return;
+  const gradeF = document.getElementById('db-grade-filter')?.value||'all';
+  const searchF= document.getElementById('db-search')?.value?.toLowerCase()||'';
+
+  let list = students;
+  if(gradeF!=='all') list=list.filter(s=>s.gradeId===gradeF);
+  if(searchF) list=list.filter(s=>s.name.toLowerCase().includes(searchF));
+
+  if(!list.length){
+    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:2rem">Sin estudiantes</div>';
+    return;
+  }
+
+  grid.innerHTML = list.map(s=>{
+    const face    = (faces||{})[s.id];
+    const hasFace = !!face;
+    const grade   = grades.find(g=>g.id===s.gradeId);
+    return `<div class="db-card" style="border-color:${hasFace?'rgba(0,229,160,.3)':'var(--border)'}">
+      <div class="db-card-photo" onclick="openEditStudentModal('${s.id}')">
+        ${hasFace
+          ?`<img src="${face.photo}" alt="${s.name}" style="width:100%;height:100%;object-fit:cover">`
+          :`<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:28px;height:28px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span style="font-size:9px">Sin foto</span>
+            </div>`
+        }
+        ${hasFace?'<div style="position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 4px var(--accent)"></div>':''}
+      </div>
+      <div class="db-card-info">
+        <div class="db-card-name">${s.name}</div>
+        <div class="db-card-grade">${grade?.name||'Sin grado'}</div>
+      </div>
+      <div class="db-card-actions">
+        <button class="db-act-btn" onclick="openFaceModalForStudent('${s.id}')" title="${hasFace?'Actualizar rostro':'Registrar rostro'}"
+          style="color:${hasFace?'var(--accent)':'var(--muted)'}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M3 21a9 9 0 1118 0"/></svg>
+        </button>
+        <button class="db-act-btn" onclick="openEditStudentModal('${s.id}')" title="Editar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="db-act-btn" onclick="deleteStudent('${s.id}')" title="Eliminar" style="color:var(--danger)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openFaceModalForStudent(studentId){
+  // Abrir el modal de cara preseleccionando el estudiante
+  selectedStudentForFace = studentId;
+  openFaceModal(studentId);
+}
+
+>
 </body>
 </html>
