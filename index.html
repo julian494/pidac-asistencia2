@@ -725,6 +725,113 @@ body.role-coordinator .coord-only { display:flex !important; }
 
 .rc-coordinator:hover,.rc-coordinator.sel{border-color:#f59e0b;background:rgba(245,158,11,.08);}
 .rc-coordinator:hover span,.rc-coordinator.sel span{color:#f59e0b;}
+
+/* ══ TARJETAS BASE DE DATOS — botones mejorados ═════════════ */
+.db-card {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  transition:border-color .2s;
+}
+.db-card:hover { border-color:rgba(0,229,160,.25); }
+.db-card-photo {
+  width:100%;
+  aspect-ratio:1/1;
+  border-radius:10px;
+  overflow:hidden;
+  background:var(--surface2);
+  cursor:pointer;
+  position:relative;
+}
+.db-card-info {
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+}
+.db-card-name {
+  font-size:12px;
+  font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.db-card-grade {
+  font-size:10px;
+  color:var(--muted);
+}
+/* Botones en fila con scroll horizontal si no caben */
+.db-card-actions {
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+}
+.db-act-btn {
+  flex:1;
+  min-width:0;
+  padding:7px 4px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:var(--surface2);
+  cursor:pointer;
+  font-size:10px;
+  font-weight:600;
+  color:var(--muted);
+  font-family:var(--font);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  transition:all .15s;
+  white-space:nowrap;
+}
+.db-act-btn svg { width:11px; height:11px; flex-shrink:0; }
+.db-act-btn:hover { border-color:var(--accent); color:var(--accent); background:rgba(0,229,160,.06); }
+.db-act-btn.danger:hover { border-color:var(--danger); color:var(--danger); background:rgba(255,61,90,.06); }
+/* ══ FIN TARJETAS ════════════════════════════════════════════ */
+
+
+/* ══ ESP32 PANEL (faltante) ══════════════════════════════════ */
+.esp-fab{position:fixed;bottom:80px;right:16px;z-index:9100;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0f6e56,#1d9e75);border:none;cursor:pointer;color:#fff;font-size:22px;box-shadow:0 4px 20px rgba(0,229,160,.4);display:flex;align-items:center;justify-content:center;transition:transform .15s;position:relative}
+.esp-fab:hover{transform:scale(1.08)}
+.esp-fab-status{position:absolute;top:2px;right:2px;width:12px;height:12px;border-radius:50%;background:#555;border:2px solid var(--bg);transition:background .3s}
+.esp-fab-status.live{background:var(--accent);animation:pulse 1.5s infinite}
+.esp-fab-status.err{background:var(--danger)}
+.esp-fab-status.scan{background:var(--warn);animation:pulse .6s infinite}
+.esp-panel{position:fixed;bottom:140px;right:16px;z-index:9100;width:310px;background:var(--surface);border:1px solid rgba(0,229,160,.2);border-radius:20px;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,.5);display:none;flex-direction:column;gap:10px;animation:fadeUp .2s ease}
+.esp-panel.open{display:flex}
+.esp-card-hdr{display:flex;align-items:center;justify-content:space-between}
+.esp-card-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px}
+.esp-card-title svg{width:15px;height:15px;color:var(--accent)}
+.esp-close{background:none;border:none;color:var(--muted);cursor:pointer;padding:3px;border-radius:6px}
+.esp-close svg{width:14px;height:14px}
+.esp-status-row{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 11px;font-size:11px}
+.esp-s-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
+.esp-s-dot.on{background:var(--accent)}
+.esp-s-dot.err{background:var(--danger)}
+.esp-s-dot.scan{background:var(--warn);animation:pulse .7s infinite}
+.esp-s-txt{flex:1;color:var(--text)}
+.esp-s-fps{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.esp-stream-layer{position:absolute;inset:0;z-index:10;display:none;background:#040a14}
+.esp-stream-layer.active{display:block}
+.esp-stream-layer img{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0}
+.esp-source-tab{display:flex;gap:6px;background:var(--surface2);border-radius:10px;padding:4px}
+.esp-tab{flex:1;padding:7px;border:none;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);color:var(--muted);background:transparent;transition:all .2s}
+.esp-tab.active{background:var(--accent);color:#07101F}
+.esp-btn{width:100%;padding:9px;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s}
+.esp-btn svg{width:13px;height:13px}
+.esp-btn-g{background:linear-gradient(135deg,var(--accent),#00c888);color:#07101F}
+.esp-btn-r{background:rgba(255,61,90,.15);border:1px solid rgba(255,61,90,.3);color:var(--danger)}
+.esp-scan-res{font-size:11px;color:var(--muted);line-height:1.8;display:none}
+.esp-found{cursor:pointer;color:var(--accent2);text-decoration:underline;display:block}
+.esp-controls{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.esp-controls select{background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:4px 7px;font-family:var(--font);font-size:11px;outline:none}
+/* ══ FIN ESP32 ════════════════════════════════════════════════ */
+
 </style>
 </head>
 <body onload="onBodyLoad()">
@@ -1681,11 +1788,13 @@ function doLogin(){
 
   if((u===ADMIN_USER.toLowerCase()||u==='pidac_admin')&&p===ADMIN_PASS){
     currentUser={role:'admin',name:'Administrador',username:ADMIN_USER};
+    saveSession(currentUser);
     launchApp(); return;
   }
   const acc=accounts.find(a=>a.username.toLowerCase()===u&&a.password===p);
   if(acc){
     currentUser={...acc};
+    saveSession(currentUser);
     if(acc.role==='student') launchStudentPortal(acc);
     else launchApp();
     return;
@@ -1757,8 +1866,10 @@ function launchStudentPortal(acc){
 
 function doLogout(){
   stopCameraAll();
-  fbListeners.forEach(u=>u()); fbListeners=[];
+  fbListeners.forEach(u=>{ try{u();}catch(e){} }); fbListeners=[];
   currentUser=null;
+  clearSession();
+  _excusesListenerSet=false; // permitir re-iniciar listener al volver a loguear
   document.getElementById('app-shell').classList.add('hidden');
   const sp=document.getElementById('student-portal'); if(sp) sp.classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
@@ -1774,6 +1885,16 @@ function onBodyLoad(){
   if(location.protocol==='file:'){
     const w=document.getElementById('file-warn');
     if(w) w.style.display='block';
+  }
+  // Intentar restaurar sesión automáticamente
+  if(typeof restoreSession==='function' && restoreSession()){
+    // Esperar a que Firebase cargue los datos y luego lanzar app
+    setTimeout(()=>{
+      if(currentUser){
+        if(currentUser.role==='student') launchStudentPortal(currentUser);
+        else launchApp();
+      }
+    }, 800);
   }
 }
 
@@ -2300,35 +2421,7 @@ async function deleteAccount(id){
   if(!confirm('¿Eliminar esta cuenta?'))return;
   await fbDel('accounts',id);
 }
-function renderAccounts(){
-  const container=document.getElementById('accounts-list'); if(!container)return;
-  const teachers=accounts.filter(a=>a.role==='teacher');
-  const stuAccs=accounts.filter(a=>a.role==='student');
-  const rc={admin:'var(--purple)',teacher:'var(--accent2)',student:'var(--accent)'};
-  const row=(a,del)=>{
-    const g=grades.find(x=>x.id===a.gradeId);
-    const s=students.find(x=>x.id===a.studentId);
-    const sub=g?g.name:s?s.name:'';
-    return `<div class="acc-row">
-      <div class="acc-av" style="background:${rc[a.role]||'var(--muted)'}22;color:${rc[a.role]||'var(--muted)'}">${toInitials(a.name).toUpperCase()}</div>
-      <div class="acc-info"><div class="acc-name">${a.name}</div><div class="acc-user">@${a.username}${sub?' · '+sub:''}</div></div>
-      ${del?`<button class="acc-del" onclick="deleteAccount('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>`:''}
-    </div>`;
-  };
-  container.innerHTML=`
-  <div class="acc-section">
-    <div class="acc-hdr"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Administradores</h4></div>
-    <div class="acc-row"><div class="acc-av" style="background:rgba(168,85,247,.15);color:var(--purple)">PA</div><div class="acc-info"><div class="acc-name">Administrador PIDAC</div><div class="acc-user">@${ADMIN_USER} · Cuenta principal</div></div></div>
-  </div>
-  <div class="acc-section">
-    <div class="acc-hdr"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Profesores (${teachers.length})</h4><button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="openAccountModal('teacher')">+ Agregar</button></div>
-    ${teachers.length?teachers.map(a=>row(a,true)).join(''):'<div class="acc-empty">No hay profesores</div>'}
-  </div>
-  <div class="acc-section">
-    <div class="acc-hdr"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>Estudiantes (${stuAccs.length})</h4><button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="openAccountModal('student')">+ Agregar</button></div>
-    ${stuAccs.length?stuAccs.map(a=>row(a,true)).join(''):'<div class="acc-empty">No hay cuentas de estudiantes</div>'}
-  </div>`;
-}
+
 
 // ═══════════════════════════════════════════════════════
 //  SELF-REGISTRATION
@@ -2579,8 +2672,8 @@ async function confirmImport(){
 // ═══════════════════════════════════════════════════════
 
 // ── Constantes de reconocimiento
-const FR_THRESHOLD  = 0.40;   // distancia máxima para match (más bajo = más estricto)
-const FR_CONFIRM    = 2;       // frames consecutivos para confirmar identidad
+const FR_THRESHOLD  = 0.45;   // distancia máxima para match (más bajo = más estricto)
+const FR_CONFIRM    = 1;       // frames consecutivos para confirmar identidad
 const FR_COOLDOWN   = 12000;   // ms sin re-marcar al mismo estudiante
 const confirmBuffer = {};      // studentId → frames consecutivos detectados
 
@@ -2599,11 +2692,12 @@ async function loadFaceApiSSD(){
   try{
     // Cargar TinyFaceDetector (rápido) + reconocimiento
     // NO cargar SSD porque requiere más memoria y es más lento de inicializar
-    await Promise.all([
+    const timeout=new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),15000));
+    await Promise.race([Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
       faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL),
       faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-    ]);
+    ]),timeout]);
     ssdReady = true;
     console.log('✓ face-api TinyFaceDetector + Recognition cargado');
     return true;
@@ -2623,7 +2717,8 @@ function loadModels(){
     });
   return modelsPromise;
 }
-loadModels();
+// Precargar modelos en background (listos cuando abras la cámara)
+setTimeout(()=>loadModels(),1500);
 
 function _getFace(id){ return (faces||{})[id]||null; }
 
@@ -2656,33 +2751,51 @@ function loadImageFromDataURL(dataURL){
 // ── Construir descriptores con SSD (fallback a Tiny)
 async function buildDescriptors(){
   if(!modelsLoaded) return;
-  faceDescriptors = [];
-  let built=0, failed=0;
-  const detOpts = new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.15, inputSize:512});
-  for(const [studentId, data] of Object.entries(faces||{})){
-    if(!data.photo) continue;
-    try{
-      const img = await prepareImageForDescriptor(data.photo);
-      let det = await faceapi.detectSingleFace(img, detOpts)
-        .withFaceLandmarks(true).withFaceDescriptor();
-      if(!det){
-        const orig = await loadImageFromDataURL(data.photo);
-        det = await faceapi.detectSingleFace(orig,
-          new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.08,inputSize:608}))
-          .withFaceLandmarks(true).withFaceDescriptor();
-      }
-      if(det){ faceDescriptors.push({studentId,descriptors:[det.descriptor]}); built++; }
-      else{ failed++; console.warn('Sin descriptor:',studentId); }
-    } catch(e){ failed++; console.warn('Descriptor error:',studentId,e.message); }
+  faceDescriptors=[];
+  let built=0,failed=0;
+  const opts1=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.1,inputSize:160});
+  const opts2=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.08,inputSize:320});
+  const entries=Object.entries(faces||{});
+  if(!entries.length){faceMatcher=null;return;}
+
+  // Procesar en lotes de 3 en paralelo
+  for(let i=0;i<entries.length;i+=3){
+    await Promise.all(entries.slice(i,i+3).map(async([sid,data])=>{
+      if(!data.photo)return;
+      try{
+        const img=await makeImg(data.photo,160);
+        let det=await faceapi.detectSingleFace(img,opts1).withFaceLandmarks(true).withFaceDescriptor();
+        if(!det){
+          const img2=await makeImg(data.photo,320);
+          det=await faceapi.detectSingleFace(img2,opts2).withFaceLandmarks(true).withFaceDescriptor();
+        }
+        if(det){faceDescriptors.push({studentId:sid,descriptors:[det.descriptor]});built++;}
+        else failed++;
+      }catch(e){failed++;}
+    }));
   }
   if(faceDescriptors.length>0){
-    faceMatcher = new faceapi.FaceMatcher(
+    faceMatcher=new faceapi.FaceMatcher(
       faceDescriptors.map(fd=>new faceapi.LabeledFaceDescriptors(fd.studentId,fd.descriptors)),
       FR_THRESHOLD
     );
-    console.log(`✓ FaceMatcher: ${built} OK, ${failed} fallidos`);
-  } else { faceMatcher=null; }
+    console.log(`✓ FaceMatcher: ${built} OK, ${failed} sin descriptor`);
+  }else{faceMatcher=null;}
 }
+
+function makeImg(dataURL,size){
+  return new Promise((res,rej)=>{
+    const img=new Image();img.crossOrigin='anonymous';
+    img.onload=()=>{
+      const c=document.createElement('canvas');c.width=c.height=size;
+      const ctx=c.getContext('2d');ctx.filter='contrast(1.1) brightness(1.05)';
+      ctx.drawImage(img,0,0,size,size);
+      const out=new Image();out.onload=()=>res(out);out.onerror=rej;
+      out.src=c.toDataURL('image/jpeg',0.9);
+    };img.onerror=rej;img.src=dataURL;
+  });
+}
+
 
 function onMpResults(results){
   _mpLastBoxes = (results.detections||[]).map(d=>{
@@ -2697,132 +2810,7 @@ function onMpResults(results){
   });
 }
 
-async function runFaceLoop(){
-  const video   = document.getElementById('cam-feed');
-  const overlay = document.getElementById('face-overlay');
-  if(!video || !scanActive) return;
 
-  const ctx = overlay.getContext('2d');
-  // Canvas SIN transform — coordenadas absolutas del frame
-  overlay.style.transform = 'scaleX(-1)'; // espejamos canvas igual que video
-
-  let lastRecog  = 0;
-  const RECOG_MS = 200; // reconocimiento cada 200ms
-  let cachedDets = []; // [{box, studentId, confPct, color, label}]
-
-  const loop = async ()=>{
-    if(!scanActive){ ctx.clearRect(0,0,overlay.width,overlay.height); return; }
-
-    // Sync canvas size
-    // Fuente: ESP32-CAM stream o cámara local
-    const espImg = window._espScanActive ? document.getElementById('esp-stream-img') : null;
-    // Para ESP32: usar el img del stream si tiene dimensiones válidas
-    const useEsp = espImg && espImg.naturalWidth > 0 && espImg.naturalHeight > 0;
-    const src    = useEsp ? espImg : video;
-    const vw = useEsp ? espImg.naturalWidth  : (video.videoWidth  || 640);
-    const vh = useEsp ? espImg.naturalHeight : (video.videoHeight || 480);
-    if(overlay.width!==vw||overlay.height!==vh){ overlay.width=vw; overlay.height=vh; }
-
-    // FPS counter
-    _fpsFrames++;
-    const now = performance.now();
-    if(now-_fpsLast>=1000){
-      const el=document.getElementById('fps-val');
-      if(el) el.textContent=Math.round(_fpsFrames*1000/(now-_fpsLast));
-      _fpsFrames=0; _fpsLast=now;
-    }
-
-    // ── DETECCIÓN + RECONOCIMIENTO cada RECOG_MS ─────────────
-    if(modelsLoaded && now-lastRecog>=RECOG_MS){
-      lastRecog=now;
-      try{
-        const opts = new faceapi.TinyFaceDetectorOptions({
-          scoreThreshold: 0.3,
-          inputSize: 320
-        });
-
-        let dets;
-        if(faceMatcher){
-          // Con reconocimiento
-          dets = await faceapi.detectAllFaces(video, opts)
-            .withFaceLandmarks(true)
-            .withFaceDescriptors();
-          cachedDets = dets.map(det=>{
-            const b   = det.detection.box;
-            const match = faceMatcher.findBestMatch(det.descriptor);
-            const dist  = match.distance;
-            const isMatch = match.label!=='unknown' && dist<FR_THRESHOLD;
-            const confPct = isMatch
-              ? Math.max(0,Math.min(100,Math.round((1-dist/FR_THRESHOLD)*100)))
-              : null;
-            if(isMatch){
-              const sid = match.label;
-              confirmBuffer[sid]=(confirmBuffer[sid]||0)+1;
-              if(confirmBuffer[sid]>=FR_CONFIRM && !recentlyMarked.has(sid)){
-                recentlyMarked.add(sid); confirmBuffer[sid]=0;
-                const stu=students.find(s=>s.id===sid);
-                if(stu){
-                  stu.status='present';
-                  fbSet('students',sid,{status:'present',updatedAt:new Date().toISOString()});
-                  renderTable(document.getElementById('att-search')?.value||'');
-                  updateStats(); addDetectedPanel(stu,confPct); showQuickToast(stu.name);
-                  if(typeof sendPushNotification==='function')
-                    sendPushNotification('✓ Asistencia',stu.name+' — presente');
-                  setTimeout(()=>recentlyMarked.delete(sid),FR_COOLDOWN);
-                }
-              }
-            }
-            const stu=isMatch?students.find(s=>s.id===match.label):null;
-            return {
-              x:b.x, y:b.y, w:b.width, h:b.height,
-              label: stu?stu.name.split(' ').slice(0,2).join(' '):(isMatch?'...':'Desconocido'),
-              color: stu?(confPct>=85?'#00E5A0':'#7FFFD4'):'#FF3D5A',
-              confPct
-            };
-          });
-          Object.keys(confirmBuffer).forEach(k=>{
-            if(!cachedDets.find(d=>{
-              const stu=students.find(s=>s.name.split(' ').slice(0,2).join(' ')===d.label);
-              return stu?.id===k;
-            })) confirmBuffer[k]=0;
-          });
-        } else {
-          // Solo detección (sin reconocimiento aún)
-          dets = await faceapi.detectAllFaces(video, opts);
-          cachedDets = dets.map(det=>({
-            x:det.box.x, y:det.box.y, w:det.box.width, h:det.box.height,
-            label:'Detectado', color:'#00B8FF', confPct:null
-          }));
-        }
-      } catch(e){ /* mantener último resultado */ }
-    }
-
-    // ── DIBUJAR ──────────────────────────────────────────────
-    ctx.clearRect(0,0,overlay.width,overlay.height);
-
-    // HUD
-    const dot=document.getElementById('hud-dot');
-    const lbl=document.getElementById('hud-label');
-    if(dot&&lbl){
-      if(!modelsLoaded){
-        dot.className='hud-dot yellow'; lbl.textContent='CARGANDO IA…';
-      } else if(cachedDets.length>0){
-        dot.className='hud-dot'; lbl.textContent=cachedDets.length===1?'1 CARA':''+cachedDets.length+' CARAS';
-      } else {
-        dot.className='hud-dot yellow'; lbl.textContent=faceMatcher?'BUSCANDO...':'ACERCA TU CARA';
-      }
-    }
-
-    cachedDets.forEach(d=>{
-      drawScanBox(ctx, d.x, d.y, d.w, d.h, d.color, d.label, d.confPct,
-        d.label!=='Detectado'&&d.label!=='Desconocido');
-    });
-
-    _faceLoopId = requestAnimationFrame(loop);
-  };
-
-  _faceLoopId = requestAnimationFrame(loop);
-}
 
 function drawScanBox(ctx, x, y, w, h, color, label, confPct, student){
   const t   = performance.now();
@@ -3084,116 +3072,110 @@ async function startScan(){
 async function runFaceLoop(){
   const video   = document.getElementById('cam-feed');
   const overlay = document.getElementById('face-overlay');
-  const camBox  = document.getElementById('cam-box');
-  if(!video || !scanActive) return;
-
-  // Sincronizar canvas con el video
-  const syncOverlay = ()=>{
-    const vw = video.videoWidth  || 640;
-    const vh = video.videoHeight || 480;
-    if(overlay.width !== vw){ overlay.width  = vw; }
-    if(overlay.height !== vh){ overlay.height = vh; }
-  };
+  if(!video||!scanActive) return;
   const ctx = overlay.getContext('2d');
-  overlay.style.transform = 'scaleX(-1)'; // espejo igual que el video
+  overlay.style.transform='scaleX(-1)';
 
-  // Opciones del detector optimizadas
-  const detOpts = new faceapi.TinyFaceDetectorOptions({
-    scoreThreshold: 0.45,
-    inputSize: 416   // 416 = balance precisión/velocidad (320 muy rápido, 608 muy lento)
-  });
+  // OffscreenCanvas 320x240 para detección rápida
+  const off=document.createElement('canvas');
+  off.width=320;off.height=240;
+  const offCtx=off.getContext('2d',{willReadFrequently:true});
 
-  // Throttle: detectar máx cada 120ms (~8 fps) para no quemar CPU
-  let lastDetect = 0;
-  const DETECT_INTERVAL = 120;
+  // Una sola instancia de opciones (no recrear cada frame)
+  const OPTS=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.38,inputSize:224});
 
-  const detect = async () => {
-    if(!scanActive) return;
-    syncOverlay();
+  let lastRecog=0, cachedDets=[];
+  const RECOG_MS=180; // ~5fps de IA — suficiente para aula
 
-    const now = performance.now();
-    if(now - lastDetect < DETECT_INTERVAL){
-      scanLoop = requestAnimationFrame(detect);
-      return;
-    }
-    lastDetect = now;
+  const loop=async()=>{
+    if(!scanActive){ctx.clearRect(0,0,overlay.width,overlay.height);return;}
 
-    let detections = [];
-    try{
-      if(faceMatcher){
-        detections = await faceapi
-          .detectAllFaces(video, detOpts)
-          .withFaceLandmarks(true)
-          .withFaceDescriptors();
-      } else {
-        detections = await faceapi.detectAllFaces(video, detOpts);
-      }
-    } catch(e){ /* saltar frame */ }
+    // Sync canvas
+    const vw=video.videoWidth||320,vh=video.videoHeight||240;
+    if(overlay.width!==vw||overlay.height!==vh){overlay.width=vw;overlay.height=vh;}
 
-    ctx.clearRect(0, 0, overlay.width, overlay.height);
-    const scaleX = overlay.width  / (video.videoWidth  || 640);
-    const scaleY = overlay.height / (video.videoHeight || 480);
-
-    // Actualizar status
-    const st = document.getElementById('cam-st');
-    if(st && faceMatcher){
-      st.className = 'cam-status info';
-      st.innerHTML = detections.length > 0
-        ? svgInfo + `Detectando <strong>${detections.length}</strong> cara(s)…`
-        : svgInfo + 'Buscando rostros…';
+    // FPS
+    _fpsFrames++;
+    const now=performance.now();
+    if(now-_fpsLast>=1000){
+      const el=document.getElementById('fps-val');
+      if(el)el.textContent=Math.round(_fpsFrames*1000/(now-_fpsLast));
+      _fpsFrames=0;_fpsLast=now;
     }
 
-    for(const det of detections){
-      const box = det.detection ? det.detection.box : det.box;
-      if(!box) continue;
-      const bx = box.x * scaleX;
-      const by = box.y * scaleY;
-      const bw = box.width  * scaleX;
-      const bh = box.height * scaleY;
-      let label = 'Detectado', color = '#00B8FF', confPct = null;
+    // Detección + reconocimiento throttled
+    if(modelsLoaded&&now-lastRecog>=RECOG_MS){
+      lastRecog=now;
+      try{
+        offCtx.drawImage(video,0,0,320,240);
+        const sx=vw/320,sy=vh/240;
 
-      if(faceMatcher && det.descriptor){
-        const match = faceMatcher.findBestMatch(det.descriptor);
-        const dist  = match.distance;
-
-        if(match.label !== 'unknown'){
-          const student = students.find(s => s.id === match.label);
-          if(student){
-            confPct = Math.max(0, Math.min(100, Math.round((1 - dist/0.42)*100)));
-            label   = student.name.split(' ').slice(0,2).join(' ');
-            color   = confPct >= 85 ? '#00E5A0' : confPct >= 60 ? '#7FFFD4' : '#FFAA00';
-
-            // Confirmación multi-frame (evita marcas por frames borrosos)
-            confirmBuffer[student.id] = (confirmBuffer[student.id]||0) + 1;
-
-            if(confirmBuffer[student.id] >= 2 && !recentlyMarked.has(student.id)){
-              recentlyMarked.add(student.id);
-              confirmBuffer[student.id] = 0;
-              student.status = 'present';
-              fbSet('students', student.id, {status:'present', updatedAt:new Date().toISOString()});
-              renderTable(document.getElementById('att-search')?.value||'');
-              updateStats();
-              addDetectedPanel(student);
-              showQuickToast(student.name);
-              if(typeof sendPushNotification === 'function')
-                sendPushNotification('✓ Asistencia', student.name + ' — presente');
-              setTimeout(()=> recentlyMarked.delete(student.id), 12000);
+        if(faceMatcher){
+          const dets=await faceapi.detectAllFaces(off,OPTS)
+            .withFaceLandmarks(true).withFaceDescriptors();
+          cachedDets=dets.map(det=>{
+            const b=det.detection.box;
+            const match=faceMatcher.findBestMatch(det.descriptor);
+            const dist=match.distance;
+            const ok=match.label!=='unknown'&&dist<FR_THRESHOLD;
+            const conf=ok?Math.max(0,Math.min(100,Math.round((1-dist/FR_THRESHOLD)*100))):null;
+            if(ok){
+              const sid=match.label;
+              confirmBuffer[sid]=(confirmBuffer[sid]||0)+1;
+              if(confirmBuffer[sid]>=FR_CONFIRM&&!recentlyMarked.has(sid)){
+                recentlyMarked.add(sid);confirmBuffer[sid]=0;
+                const stu=students.find(s=>s.id===sid);
+                if(stu){
+                  stu.status='present';
+                  fbSet('students',sid,{status:'present',updatedAt:new Date().toISOString()});
+                  renderTable(document.getElementById('att-search')?.value||'');
+                  updateStats();addDetectedPanel(stu,conf);showQuickToast(stu.name);
+                  if(typeof sendPushNotification==='function')
+                    sendPushNotification('✓ Asistencia',stu.name+' — presente');
+                  setTimeout(()=>recentlyMarked.delete(sid),FR_COOLDOWN);
+                }
+              }
             }
-          }
+            const stu=ok?students.find(s=>s.id===match.label):null;
+            return{
+              x:b.x*sx,y:b.y*sy,w:b.width*sx,h:b.height*sy,
+              label:stu?stu.name.split(' ').slice(0,2).join(' '):(ok?'...':'Desconocido'),
+              color:stu?(conf>=85?'#00E5A0':'#7FFFD4'):'#FF3D5A',
+              conf,studentId:ok?match.label:null
+            };
+          });
+          Object.keys(confirmBuffer).forEach(k=>{
+            if(!cachedDets.find(d=>d.studentId===k))confirmBuffer[k]=0;
+          });
         } else {
-          label = 'Desconocido'; color = '#FF3D5A';
-          Object.keys(confirmBuffer).forEach(k=>{ if(confirmBuffer[k]>0) confirmBuffer[k]--; });
+          const dets=await faceapi.detectAllFaces(off,OPTS);
+          cachedDets=dets.map(d=>({
+            x:d.box.x*sx,y:d.box.y*sy,w:d.box.width*sx,h:d.box.height*sy,
+            label:'Detectado',color:'#00B8FF',conf:null,studentId:null
+          }));
         }
-      }
-      drawFaceBox(ctx, bx, by, bw, bh, color, label, confPct);
+      }catch(e){}
     }
 
-    if(detections.length === 0) Object.keys(confirmBuffer).forEach(k=>{ confirmBuffer[k]=0; });
-    if(scanActive) scanLoop = requestAnimationFrame(detect);
+    // Dibujar
+    ctx.clearRect(0,0,overlay.width,overlay.height);
+    const dot=document.getElementById('hud-dot');
+    const lbl=document.getElementById('hud-label');
+    if(dot&&lbl){
+      if(!modelsLoaded){dot.className='hud-dot yellow';lbl.textContent='CARGANDO IA…';}
+      else if(cachedDets.length>0){
+        dot.className='hud-dot';
+        lbl.textContent=cachedDets.length===1?'1 CARA':cachedDets.length+' CARAS';
+      }else{dot.className='hud-dot yellow';lbl.textContent=faceMatcher?'BUSCANDO...':'ACERCA TU CARA';}
+    }
+    cachedDets.forEach(d=>{
+      drawScanBox(ctx,d.x,d.y,d.w,d.h,d.color,d.label,d.conf,!!d.studentId);
+    });
+    _faceLoopId=requestAnimationFrame(loop);
   };
-
-  scanLoop = requestAnimationFrame(detect);
+  _faceLoopId=requestAnimationFrame(loop);
 }
+
 
 function drawFaceBox(ctx, x, y, w, h, color, label, confPct){
   const r = 8;
@@ -3847,8 +3829,10 @@ document.addEventListener('DOMContentLoaded',()=>{
 let excuses = []; // cache local
 
 // ── Escuchar excusas en tiempo real desde Firebase
+let _excusesListenerSet=false;
 function setupExcusesListener(){
-  if(!db) return;
+  if(!db||_excusesListenerSet) return;
+  _excusesListenerSet=true;
   fbListeners.push(db.collection('excuses').onSnapshot(snap=>{
     snap.docChanges().forEach(change=>{
       if(change.type==='added'||change.type==='modified'){
@@ -4258,6 +4242,31 @@ async function loadTeacherAttendance(dateKey){
 function setEl(id, val){ const el=document.getElementById(id); if(el) el.textContent=val; }
 
 // ── Render de cuentas mejorado
+
+function renderCard(acc){
+  const grade = grades.find(g=>g.id===acc.gradeId);
+  const roleColors={teacher:'#00B8FF',coordinator:'#f59e0b',student:'#a855f7'};
+  const roleLabels={teacher:'Profesor',coordinator:'Coordinador',student:'Estudiante'};
+  const color=roleColors[acc.role]||'#00B8FF';
+  const initials=(acc.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  return `<div class="acc-card">
+    <div class="acc-card-av" style="background:${color}18;color:${color}">${initials}</div>
+    <div class="acc-card-info">
+      <div class="acc-card-name">${acc.name||'Sin nombre'}</div>
+      <div class="acc-card-meta">@${acc.username||''}${grade?' · '+grade.name:''}</div>
+    </div>
+    <div style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:${color}18;color:${color};border:1px solid ${color}33;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap">${roleLabels[acc.role]||acc.role}</div>
+    <div style="display:flex;gap:5px">
+      <button class="acc-act-btn" onclick="openAccountModal(null,'${acc.id}')" title="Editar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      <button class="acc-act-btn del" onclick="deleteAccount('${acc.id}')" title="Eliminar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+      </button>
+    </div>
+  </div>`;
+}
+
 function renderAccounts(){
   const coordinators = accounts.filter(a=>a.role==='coordinator');
   const teachers     = accounts.filter(a=>a.role==='teacher');
@@ -4329,6 +4338,49 @@ function openFaceModalForStudent(studentId){
   // Abrir el modal de cara preseleccionando el estudiante
   selectedStudentForFace = studentId;
   openFaceModal(studentId);
+}
+
+
+// ════════════════════════════════════════════════════════════
+//  PERSISTENCIA DE SESIÓN
+// ════════════════════════════════════════════════════════════
+function saveSession(user){
+  try{
+    localStorage.setItem('pidac_session', JSON.stringify({
+      ...user,
+      savedAt: Date.now()
+    }));
+  } catch(e){}
+}
+
+function clearSession(){
+  localStorage.removeItem('pidac_session');
+}
+
+function restoreSession(){
+  try{
+    const raw = localStorage.getItem('pidac_session');
+    if(!raw) return false;
+    const data = JSON.parse(raw);
+    // Sesión válida por 12 horas
+    if(Date.now() - data.savedAt > 12 * 60 * 60 * 1000){
+      clearSession(); return false;
+    }
+    currentUser = data;
+    return true;
+  } catch(e){ return false; }
+}
+
+// Cerrar sesión
+function logout(){
+  clearSession();
+  currentUser = null;
+  document.getElementById('app-shell').classList.add('hidden');
+  document.getElementById('login-screen').classList.remove('hidden');
+  // Limpiar listeners Firebase
+  fbListeners.forEach(u=>{ try{ u(); }catch(e){} });
+  fbListeners = [];
+  showToast('Sesión cerrada');
 }
 
 </script>
@@ -4405,5 +4457,57 @@ function openFaceModalForStudent(studentId){
   </div>
 </div>
 <!-- ══ FIN MODAL EXCUSA ════════════════════════════════════════ --
+
+<!-- ══ ESP32-CAM PANEL ════════════════════════════════════════ -->
+<div class="esp-panel" id="espPanel">
+  <div class="esp-card-hdr">
+    <div class="esp-card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      ESP32-CAM
+    </div>
+    <button class="esp-close" onclick="document.getElementById('espPanel').classList.remove('open')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="esp-status-row">
+    <span class="esp-s-dot" id="espDot"></span>
+    <span class="esp-s-txt" id="espTxt">Sin cámara</span>
+    <span class="esp-s-fps" id="espFpsLbl"></span>
+  </div>
+  <div style="display:flex;gap:7px">
+    <input type="text" id="espManualIp" placeholder="10.131.x.x"
+      style="flex:1;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none"
+      onkeydown="if(event.key==='Enter')espConnect(document.getElementById('espManualIp').value)">
+    <button class="esp-btn esp-btn-g" style="width:auto;padding:9px 14px" onclick="espConnect(document.getElementById('espManualIp').value)">Conectar</button>
+  </div>
+  <button class="esp-btn esp-btn-g" id="espAutoBtn" onclick="espAutoDetect()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    Detectar automáticamente
+  </button>
+  <div class="esp-scan-res" id="espScanRes"></div>
+  <div id="espConnected" style="display:none;flex-direction:column;gap:8px">
+    <div class="esp-controls">
+      <select onchange="espCtrl('framesize',this.value)">
+        <option value="5">QVGA 320×240</option>
+        <option value="8" selected>VGA 640×480</option>
+        <option value="9">SVGA 800×600</option>
+      </select>
+      <select onchange="espCtrl('quality',this.value)">
+        <option value="8" selected>Alta calidad</option>
+        <option value="15">Media</option>
+        <option value="25">Baja</option>
+      </select>
+    </div>
+    <button class="esp-btn esp-btn-r" onclick="espDisconnect()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+      Desconectar
+    </button>
+  </div>
+</div>
+<button class="esp-fab" id="espFab" onclick="document.getElementById('espPanel').classList.toggle('open');const s=localStorage.getItem('pidac_esp_ip');if(s)document.getElementById('espManualIp').value=s;" title="ESP32-CAM">
+  📷<span class="esp-fab-status" id="espFabStatus"></span>
+</button>
+<!-- ══ FIN ESP32 PANEL ══════════════════════════════════════════ -->
+
 </body>
 </html>
