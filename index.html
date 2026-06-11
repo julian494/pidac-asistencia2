@@ -187,7 +187,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .face-card-meta{font-size:10px;color:var(--muted)}
 .face-card-grade{font-size:10px;color:var(--accent2);margin-top:1px}
 .fc-actions{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
-.fc-btn{flex:1;padding:6px 4px;border-radius:8px;border:1px solid;font-family:var(--font);font-size:10px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;transition:opacity .2s;white-space:nowrap;min-width:0}
+.fc-btn{width:34px;height:34px;padding:0;border-radius:8px;border:1px solid;font-family:var(--font);font-size:10px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:0;transition:opacity .2s;white-space:nowrap;min-width:0}
 .fc-btn svg{width:11px;height:11px;flex-shrink:0}
 .fc-btn:hover{opacity:.7}
 .fc-cam{background:rgba(0,229,160,.07);color:var(--accent);border-color:rgba(0,229,160,.25)}
@@ -213,9 +213,9 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .btn-modal-cancel{padding:12px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:13px;cursor:pointer;font-family:var(--font);transition:all .2s}
 .btn-modal-cancel:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
 /* ── CAM ── */
-.cam-box{background:#040a14;border-radius:16px;overflow:hidden;position:relative;width:100%;border:1.5px solid var(--border)}
+
 .cam-box video{width:100%;display:block;object-fit:cover;transform:scaleX(-1)}
-canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1)}
+
 .cam-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;color:var(--muted)}
 .cam-ph svg{width:44px;height:44px;opacity:.35}
 .cam-ph p{font-size:12px;opacity:.6;text-align:center}
@@ -375,9 +375,9 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
 @keyframes scanRotate   { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 @keyframes dotBlink     { 0%,100%{opacity:1} 50%{opacity:0} }
 
-.cam-box{position:relative;background:#040a14;border-radius:16px;overflow:hidden;border:1.5px solid var(--border)}
+
 .cam-box video{width:100%;display:block;object-fit:cover}
-canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+
 
 /* HUD overlay — marco general de la cámara */
 .cam-hud{position:absolute;inset:0;pointer-events:none;z-index:5}
@@ -416,9 +416,437 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
 .det-badge.conf-med{background:rgba(255,170,0,.12);border-color:rgba(255,170,0,.4);color:var(--warn)}
 /* ══ FIN SCANNER ════════════════════════════════════════════ */
 
+
+/* ══ CÁMARA — encuadre perfecto PC y móvil ═══════════════════ */
+.cam-box{
+  position:relative;background:#040a14;border-radius:16px;
+  overflow:hidden;border:1.5px solid var(--border);
+  width:100%;
+  /* Altura fija que funciona en PC y celular sin cortar */
+  aspect-ratio:4/3;
+  display:flex;align-items:center;justify-content:center;
+}
+/* En móvil usar proporción más cuadrada para ver la cara completa */
+@media(max-width:768px){
+  .cam-box{ aspect-ratio:3/4; }
+  .cam-box.scan-box{ aspect-ratio:1/1; }
+}
+.cam-box video{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:cover;    /* llena el box sin deformar */
+  object-position:center center;
+  display:block;
+}
+canvas.face-overlay{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  pointer-events:none;
+  /* El canvas se espeja igual que el video */
+  transform:scaleX(-1);
+}
+/* ══ FIN CÁMARA ═══════════════════════════════════════════════ */
+
+
+/* ══ ESP32-CAM INTEGRADO ══════════════════════════════════════ */
+.esp-pill{
+  position:fixed;bottom:80px;right:16px;z-index:9100;
+  display:flex;flex-direction:column;align-items:flex-end;gap:8px;
+}
+.esp-fab{
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,#0f6e56,#1d9e75);
+  border:none;cursor:pointer;color:#fff;font-size:22px;
+  box-shadow:0 4px 20px rgba(0,229,160,.4);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .15s,box-shadow .15s;position:relative;
+}
+.esp-fab:hover{transform:scale(1.08);box-shadow:0 6px 28px rgba(0,229,160,.6)}
+.esp-fab-status{
+  position:absolute;top:2px;right:2px;width:12px;height:12px;
+  border-radius:50%;background:#555;border:2px solid var(--bg);
+  transition:background .3s;
+}
+.esp-fab-status.live{background:var(--accent);animation:pulse 1.5s infinite}
+.esp-fab-status.err{background:var(--danger)}
+.esp-fab-status.scan{background:var(--warn);animation:pulse .6s infinite}
+
+.esp-card{
+  background:var(--surface);border:1px solid rgba(0,229,160,.2);
+  border-radius:20px;padding:14px;width:300px;
+  box-shadow:0 12px 40px rgba(0,0,0,.5);
+  display:none;flex-direction:column;gap:10px;
+  animation:fadeUp .2s ease;
+}
+.esp-card.open{display:flex}
+.esp-card-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+}
+.esp-card-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px}
+.esp-card-title svg{width:15px;height:15px;color:var(--accent)}
+.esp-close{background:none;border:none;color:var(--muted);cursor:pointer;padding:3px;border-radius:6px}
+.esp-close svg{width:14px;height:14px}
+
+.esp-status-row{
+  display:flex;align-items:center;gap:7px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:8px 11px;font-size:11px;
+}
+.esp-s-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
+.esp-s-dot.on{background:var(--accent)}
+.esp-s-dot.err{background:var(--danger)}
+.esp-s-dot.scan{background:var(--warn);animation:pulse .7s infinite}
+.esp-s-txt{flex:1;color:var(--text)}
+.esp-s-fps{font-size:10px;color:var(--muted);font-family:var(--mono)}
+
+/* Stream de la ESP32 dentro del modal de escaneo */
+.esp-stream-layer{
+  position:absolute;inset:0;z-index:10;
+  display:none;
+  background:#040a14;
+}
+.esp-stream-layer.active{display:block}
+.esp-stream-layer img{
+  width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;
+}
+.esp-source-tab{
+  display:flex;gap:6px;background:var(--surface2);
+  border-radius:10px;padding:4px;
+}
+.esp-tab{
+  flex:1;padding:7px;border:none;border-radius:7px;
+  font-size:11px;font-weight:600;cursor:pointer;
+  font-family:var(--font);color:var(--muted);background:transparent;
+  transition:all .2s;
+}
+.esp-tab.active{background:var(--accent);color:#07101F}
+.esp-tab:not(.active):hover{color:var(--text)}
+
+.esp-btn{
+  width:100%;padding:9px;border:none;border-radius:10px;
+  font-size:12px;font-weight:700;cursor:pointer;
+  font-family:var(--font);display:flex;align-items:center;
+  justify-content:center;gap:6px;transition:opacity .15s;
+}
+.esp-btn svg{width:13px;height:13px}
+.esp-btn-g{background:linear-gradient(135deg,var(--accent),#00c888);color:#07101F}
+.esp-btn-r{background:rgba(255,61,90,.15);border:1px solid rgba(255,61,90,.3);color:var(--danger)}
+.esp-scan-res{font-size:11px;color:var(--muted);line-height:1.8;display:none}
+.esp-found{cursor:pointer;color:var(--accent2);text-decoration:underline;display:block}
+.esp-controls{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.esp-controls select{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:7px;color:var(--text);padding:4px 7px;
+  font-family:var(--font);font-size:11px;outline:none;
+}
+/* ══ FIN ESP32-CAM ════════════════════════════════════════════ */
+
+
+/* ══ SISTEMA DE ROLES ════════════════════════════════════════ */
+.admin-only { display:flex !important; }
+.teacher-only { display:none !important; }
+body.role-teacher .admin-only { display:none !important; }
+body.role-teacher .teacher-only { display:flex !important; }
+body.role-teacher .nav-item[id="nav-database"] { display:none; }
+body.role-teacher .nav-item[id="nav-accounts"] { display:none; }
+
+/* Badge de rol en sidebar */
+.role-badge {
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:9px;font-weight:700;letter-spacing:.4px;
+  padding:2px 8px;border-radius:20px;margin-top:2px;
+  text-transform:uppercase;
+}
+.role-badge.admin { background:rgba(168,85,247,.15);color:#a855f7;border:1px solid rgba(168,85,247,.3); }
+.role-badge.teacher { background:rgba(0,184,255,.15);color:var(--accent2);border:1px solid rgba(0,184,255,.3); }
+
+/* Vista profesor — estadísticas */
+.teacher-stats-grid {
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;
+  margin-bottom:1.25rem;
+}
+.teacher-stat-card {
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:14px;display:flex;flex-direction:column;gap:4px;
+}
+.teacher-stat-card .ts-val {
+  font-size:28px;font-weight:800;line-height:1;
+}
+.teacher-stat-card .ts-lbl {
+  font-size:11px;color:var(--muted);
+}
+.teacher-stat-card .ts-sub {
+  font-size:10px;color:var(--muted);margin-top:2px;
+}
+
+/* Tabla de asistencia readonly para profesor */
+.att-row-readonly { pointer-events:none; }
+.att-row-readonly .status-btn { opacity:.6;cursor:default; }
+
+/* Tarjetas de cuenta mejoradas */
+.acc-card {
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px;
+  transition:border-color .2s;
+}
+.acc-card:hover { border-color:rgba(0,229,160,.25); }
+.acc-card-av {
+  width:40px;height:40px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;
+}
+.acc-card-info { flex:1;min-width:0; }
+.acc-card-name { font-size:13px;font-weight:600; }
+.acc-card-meta { font-size:11px;color:var(--muted);margin-top:2px; }
+.acc-card-role {
+  font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;
+  text-transform:uppercase;letter-spacing:.3px;
+}
+.acc-card-role.teacher { background:rgba(0,184,255,.12);color:var(--accent2);border:1px solid rgba(0,184,255,.25); }
+.acc-card-role.student { background:rgba(168,85,247,.12);color:#a855f7;border:1px solid rgba(168,85,247,.25); }
+.acc-card-actions { display:flex;gap:6px; }
+.acc-act-btn {
+  width:32px;height:32px;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface2);cursor:pointer;display:flex;align-items:center;
+  justify-content:center;transition:all .15s;
+}
+.acc-act-btn svg { width:14px;height:14px;color:var(--muted); }
+.acc-act-btn:hover { border-color:var(--accent);background:rgba(0,229,160,.08); }
+.acc-act-btn:hover svg { color:var(--accent); }
+.acc-act-btn.del:hover { border-color:var(--danger);background:rgba(255,61,90,.08); }
+.acc-act-btn.del:hover svg { color:var(--danger); }
+
+/* Sección de base de datos mejorada */
+.db-section-hdr {
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);
+}
+.db-section-title {
+  font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;
+}
+.db-section-title svg { width:15px;height:15px;color:var(--accent); }
+/* ══ FIN ROLES ════════════════════════════════════════════════ */
+
+
+/* ══ SISTEMA DE EXCUSAS ══════════════════════════════════════ */
+/* Estado excusado en asistencia */
+.status-excused {
+  background:rgba(239,159,39,.12) !important;
+  color:var(--warn) !important;
+  border-color:rgba(239,159,39,.3) !important;
+}
+
+/* Tarjeta de excusa */
+.excuse-card {
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:14px 16px;margin-bottom:10px;
+  transition:border-color .2s;
+}
+.excuse-card:hover { border-color:rgba(0,229,160,.2); }
+.excuse-card-hdr {
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:8px;
+}
+.excuse-card-student {
+  font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;
+}
+.excuse-card-date { font-size:11px;color:var(--muted); }
+.excuse-card-meta {
+  font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;
+}
+.excuse-card-doc {
+  width:100%;aspect-ratio:4/3;max-height:200px;
+  background:#040a14;border-radius:10px;overflow:hidden;
+  border:1px solid var(--border);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:10px;position:relative;
+}
+.excuse-card-doc img {
+  width:100%;height:100%;object-fit:contain;
+}
+.excuse-card-doc .pdf-icon {
+  display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--muted);
+}
+.excuse-card-doc .pdf-icon svg { width:40px;height:40px; }
+.excuse-card-actions { display:flex;gap:8px; }
+.excuse-approve-btn {
+  flex:1;padding:9px;border:none;border-radius:10px;
+  background:rgba(0,229,160,.12);color:var(--accent);
+  border:1px solid rgba(0,229,160,.3);font-size:12px;font-weight:700;
+  cursor:pointer;font-family:var(--font);transition:all .15s;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+}
+.excuse-approve-btn:hover { background:rgba(0,229,160,.22); }
+.excuse-approve-btn svg { width:13px;height:13px; }
+.excuse-reject-btn {
+  flex:1;padding:9px;border:none;border-radius:10px;
+  background:rgba(255,61,90,.08);color:var(--danger);
+  border:1px solid rgba(255,61,90,.2);font-size:12px;font-weight:700;
+  cursor:pointer;font-family:var(--font);transition:all .15s;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+}
+.excuse-reject-btn:hover { background:rgba(255,61,90,.15); }
+.excuse-reject-btn svg { width:13px;height:13px; }
+.excuse-status-badge {
+  font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;
+  text-transform:uppercase;letter-spacing:.3px;
+}
+.excuse-status-badge.pending  { background:rgba(239,159,39,.12);color:var(--warn);border:1px solid rgba(239,159,39,.3); }
+.excuse-status-badge.approved { background:rgba(0,229,160,.12);color:var(--accent);border:1px solid rgba(0,229,160,.3); }
+.excuse-status-badge.rejected { background:rgba(255,61,90,.1);color:var(--danger);border:1px solid rgba(255,61,90,.25); }
+
+/* Modal excusa */
+.excuse-doc-preview {
+  width:100%;aspect-ratio:4/3;background:#040a14;border-radius:12px;
+  border:1px solid var(--border);overflow:hidden;display:flex;
+  align-items:center;justify-content:center;cursor:pointer;
+  position:relative;margin-top:8px;
+}
+.excuse-doc-preview img { width:100%;height:100%;object-fit:contain; }
+.excuse-doc-preview .placeholder {
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  color:var(--muted);font-size:12px;text-align:center;
+}
+.excuse-doc-preview .placeholder svg { width:36px;height:36px; }
+.excuse-upload-btns { display:flex;gap:8px;margin-top:8px; }
+.excuse-upload-btn {
+  flex:1;padding:10px;border:1px solid var(--border);border-radius:10px;
+  background:var(--surface2);color:var(--text);font-size:12px;font-weight:600;
+  cursor:pointer;font-family:var(--font);transition:all .15s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.excuse-upload-btn svg { width:14px;height:14px; }
+.excuse-upload-btn:hover { border-color:var(--accent);color:var(--accent); }
+
+/* Roles coordinador */
+body.role-coordinator .admin-only { display:none !important; }
+body.role-coordinator .coord-only { display:flex !important; }
+.coord-only { display:none !important; }
+/* ══ FIN EXCUSAS ══════════════════════════════════════════════ */
+
+.rc-coordinator:hover,.rc-coordinator.sel{border-color:#f59e0b;background:rgba(245,158,11,.08);}
+.rc-coordinator:hover span,.rc-coordinator.sel span{color:#f59e0b;}
+
+/* ══ TARJETAS BASE DE DATOS — botones mejorados ═════════════ */
+.db-card {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  transition:border-color .2s;
+}
+.db-card:hover { border-color:rgba(0,229,160,.25); }
+.db-card-photo {
+  width:100%;
+  aspect-ratio:1/1;
+  border-radius:10px;
+  overflow:hidden;
+  background:var(--surface2);
+  cursor:pointer;
+  position:relative;
+}
+.db-card-info {
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+}
+.db-card-name {
+  font-size:12px;
+  font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.db-card-grade {
+  font-size:10px;
+  color:var(--muted);
+}
+/* Botones en fila con scroll horizontal si no caben */
+.db-card-actions {
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+}
+.db-act-btn {
+  flex:1;
+  min-width:0;
+  padding:7px 4px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:var(--surface2);
+  cursor:pointer;
+  font-size:10px;
+  font-weight:600;
+  color:var(--muted);
+  font-family:var(--font);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  transition:all .15s;
+  white-space:nowrap;
+}
+.db-act-btn svg { width:11px; height:11px; flex-shrink:0; }
+.db-act-btn:hover { border-color:var(--accent); color:var(--accent); background:rgba(0,229,160,.06); }
+.db-act-btn.danger:hover { border-color:var(--danger); color:var(--danger); background:rgba(255,61,90,.06); }
+/* ══ FIN TARJETAS ════════════════════════════════════════════ */
+
+
+/* ══ ESP32 PANEL (faltante) ══════════════════════════════════ */
+.esp-fab{position:fixed;bottom:80px;right:16px;z-index:9100;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0f6e56,#1d9e75);border:none;cursor:pointer;color:#fff;font-size:22px;box-shadow:0 4px 20px rgba(0,229,160,.4);display:flex;align-items:center;justify-content:center;transition:transform .15s;position:relative}
+.esp-fab:hover{transform:scale(1.08)}
+.esp-fab-status{position:absolute;top:2px;right:2px;width:12px;height:12px;border-radius:50%;background:#555;border:2px solid var(--bg);transition:background .3s}
+.esp-fab-status.live{background:var(--accent);animation:pulse 1.5s infinite}
+.esp-fab-status.err{background:var(--danger)}
+.esp-fab-status.scan{background:var(--warn);animation:pulse .6s infinite}
+.esp-panel{position:fixed;bottom:140px;right:16px;z-index:9100;width:310px;background:var(--surface);border:1px solid rgba(0,229,160,.2);border-radius:20px;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,.5);display:none;flex-direction:column;gap:10px;animation:fadeUp .2s ease}
+.esp-panel.open{display:flex}
+.esp-card-hdr{display:flex;align-items:center;justify-content:space-between}
+.esp-card-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px}
+.esp-card-title svg{width:15px;height:15px;color:var(--accent)}
+.esp-close{background:none;border:none;color:var(--muted);cursor:pointer;padding:3px;border-radius:6px}
+.esp-close svg{width:14px;height:14px}
+.esp-status-row{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 11px;font-size:11px}
+.esp-s-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
+.esp-s-dot.on{background:var(--accent)}
+.esp-s-dot.err{background:var(--danger)}
+.esp-s-dot.scan{background:var(--warn);animation:pulse .7s infinite}
+.esp-s-txt{flex:1;color:var(--text)}
+.esp-s-fps{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.esp-stream-layer{position:absolute;inset:0;z-index:10;display:none;background:#040a14}
+.esp-stream-layer.active{display:block}
+.esp-stream-layer img{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0}
+.esp-source-tab{display:flex;gap:6px;background:var(--surface2);border-radius:10px;padding:4px}
+.esp-tab{flex:1;padding:7px;border:none;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);color:var(--muted);background:transparent;transition:all .2s}
+.esp-tab.active{background:var(--accent);color:#07101F}
+.esp-btn{width:100%;padding:9px;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s}
+.esp-btn svg{width:13px;height:13px}
+.esp-btn-g{background:linear-gradient(135deg,var(--accent),#00c888);color:#07101F}
+.esp-btn-r{background:rgba(255,61,90,.15);border:1px solid rgba(255,61,90,.3);color:var(--danger)}
+.esp-scan-res{font-size:11px;color:var(--muted);line-height:1.8;display:none}
+.esp-found{cursor:pointer;color:var(--accent2);text-decoration:underline;display:block}
+.esp-controls{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.esp-controls select{background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:4px 7px;font-family:var(--font);font-size:11px;outline:none}
+/* ══ FIN ESP32 ════════════════════════════════════════════════ */
+
+
+/* ══ FLASH PANTALLA BLANCA ═══════════════════════════════════ */
+#screen-flash{
+  position:fixed;inset:0;z-index:999999;
+  background:#fff;opacity:0;pointer-events:none;
+  transition:opacity .08s ease-in;
+}
+#screen-flash.flash-on{ opacity:1; }
+#screen-flash.flash-off{ opacity:0;transition:opacity .4s ease-out; }
+/* ══ FIN FLASH ════════════════════════════════════════════════ */
+
 </style>
 </head>
 <body onload="onBodyLoad()">
+<div id="screen-flash"></div>
 <div id="file-warn" style="display:none;background:rgba(255,170,0,.12);border-bottom:2px solid var(--warn);padding:12px 20px;text-align:center;font-size:13px;color:var(--warn);font-family:var(--font);position:fixed;top:0;left:0;right:0;z-index:10000">
   ⚠️ <strong>Estás abriendo desde un archivo local.</strong> La cámara no funcionará. 
   Sube el HTML a GitHub Pages y ábrelo desde la URL <code style="background:rgba(255,255,255,.1);padding:2px 6px;border-radius:4px">https://...</code>
@@ -439,7 +867,7 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
     </div>
     <div class="login-title">PIDAC</div>
     <div class="login-sub">Sistema de Asistencia Escolar</div>
-    <div class="role-selector">
+    <div class="role-selector" style="grid-template-columns:repeat(2,1fr)">
       <div class="role-card rc-admin sel" id="rc-admin" onclick="selectRole('admin')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         <span>Admin</span><small>Control total</small>
@@ -447,6 +875,10 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
       <div class="role-card rc-teacher" id="rc-teacher" onclick="selectRole('teacher')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
         <span>Profesor</span><small>Asistencia</small>
+      </div>
+      <div class="role-card rc-coordinator" id="rc-coordinator" onclick="selectRole('coordinator')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Coordinador</span><small>Excusas</small>
       </div>
       <div class="role-card rc-student" id="rc-student" onclick="selectRole('student')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
@@ -485,6 +917,13 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
       <div class="nav-sec">Principal</div>
       <div class="nav-item active" id="nav-dashboard" onclick="showView('dashboard',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard
+      </div>
+      <div class="nav-item" id="nav-teacher" onclick="showView('teacher',this)" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>Mi Clase
+      </div>
+      <div class="nav-item" id="nav-excuses" onclick="showView('excuses',this)" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Excusas
+        <span id="excuses-badge" style="display:none;background:var(--danger);color:#fff;font-size:9px;font-weight:700;border-radius:20px;padding:1px 6px;margin-left:auto">0</span>
       </div>
       <div class="nav-item" id="nav-attendance" onclick="showView('attendance',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Asistencia
@@ -575,7 +1014,95 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
     </div>
 
     <!-- ESTUDIANTES -->
+    <!-- ══ VISTA EXCUSAS ═════════════════════════════════════════ -->
+    <div id="view-excuses" class="view">
+      <!-- Toolbar coordinador: enviar nueva excusa -->
+      <div class="toolbar coord-only" style="margin-bottom:1rem">
+        <button class="btn-primary" onclick="openExcuseModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nueva excusa
+        </button>
+        <select id="excuse-filter" onchange="renderExcuses()" style="padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:12px;outline:none">
+          <option value="all">Todas</option>
+          <option value="pending">Pendientes</option>
+          <option value="approved">Aprobadas</option>
+          <option value="rejected">Rechazadas</option>
+        </select>
+      </div>
+
+      <!-- Toolbar profesor: solo filtro -->
+      <div class="toolbar teacher-only" style="margin-bottom:1rem">
+        <span style="font-size:13px;font-weight:600">Excusas recibidas</span>
+        <select id="excuse-filter-t" onchange="renderExcuses()" style="padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:12px;outline:none">
+          <option value="pending">Pendientes</option>
+          <option value="all">Todas</option>
+          <option value="approved">Aprobadas</option>
+          <option value="rejected">Rechazadas</option>
+        </select>
+      </div>
+
+      <div id="excuses-list"></div>
+    </div>
+    <!-- ══ FIN EXCUSAS ═════════════════════════════════════════ -->
+
+    <!-- ══ VISTA PROFESOR ═══════════════════════════════════════ -->
+    <div id="view-teacher" class="view">
+      <!-- Stats del profesor -->
+      <div class="teacher-stats-grid" id="teacher-stats-grid">
+        <div class="teacher-stat-card">
+          <div class="ts-val" id="ts-present" style="color:var(--accent)">0</div>
+          <div class="ts-lbl">Presentes hoy</div>
+          <div class="ts-sub" id="ts-present-pct">—</div>
+        </div>
+        <div class="teacher-stat-card">
+          <div class="ts-val" id="ts-absent" style="color:var(--danger)">0</div>
+          <div class="ts-lbl">Ausentes</div>
+          <div class="ts-sub" id="ts-absent-pct">—</div>
+        </div>
+        <div class="teacher-stat-card">
+          <div class="ts-val" id="ts-total" style="color:var(--accent2)">0</div>
+          <div class="ts-lbl">Total estudiantes</div>
+          <div class="ts-sub" id="ts-grade-name">Mi grado</div>
+        </div>
+        <div class="teacher-stat-card">
+          <div class="ts-val" id="ts-rate" style="color:var(--warn)">0%</div>
+          <div class="ts-lbl">Asistencia semanal</div>
+          <div class="ts-sub">Últimos 5 días</div>
+        </div>
+      </div>
+
+      <!-- Fecha y selector -->
+      <div class="att-date-bar" style="margin-bottom:1rem">
+        <input type="date" id="teacher-date" onchange="loadTeacherAttendance(this.value)">
+        <span id="teacher-saved-lbl" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+
+      <!-- Lista de asistencia readonly -->
+      <div class="toolbar" style="margin-bottom:12px">
+        <input class="search-inp" id="teacher-search" type="text"
+          placeholder="Buscar estudiante…" oninput="renderTeacherTable(this.value)">
+      </div>
+      <div id="teacher-att-table"></div>
+
+      <!-- Botón iniciar reconocimiento -->
+      <div style="margin-top:1rem">
+        <button class="btn-primary" style="width:100%" onclick="openCamModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Iniciar reconocimiento facial
+        </button>
+      </div>
+    </div>
+    <!-- ══ FIN VISTA PROFESOR ══════════════════════════════════ -->
+
     <div id="view-database" class="view">
+      <!-- Header mejorado base de datos -->
+      <div class="db-section-hdr">
+        <div class="db-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Base de datos de estudiantes
+        </div>
+        <span id="db-total-count" style="font-size:11px;color:var(--muted)"></span>
+      </div>
       <div class="toolbar">
         <button class="btn-primary admin-only" onclick="openAddStudentModal()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
@@ -625,13 +1152,44 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
     <div id="view-accounts" class="view">
       <div class="toolbar">
         <button class="btn-primary" onclick="openAccountModal('teacher')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>+ Profesor
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          Nuevo Profesor
         </button>
-        <button class="btn-purple" onclick="openAccountModal('student')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>+ Estudiante
+        <button class="btn-primary" style="background:linear-gradient(135deg,#f59e0b,#d97706)" onclick="openAccountModal('coordinator')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Nuevo Coordinador
         </button>
       </div>
-      <div id="accounts-list"></div>
+
+      <!-- Sección coordinadores -->
+      <div class="db-section-hdr" style="margin-top:.5rem">
+        <div class="db-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#f59e0b"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Coordinadores
+        </div>
+        <span id="coordinator-count" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div id="coordinator-list"></div>
+
+      <!-- Sección profesores -->
+      <div class="db-section-hdr" style="margin-top:1rem">
+        <div class="db-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          Profesores
+        </div>
+        <span id="teacher-count" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div id="teacher-list"></div>
+
+      <!-- Sección estudiantes con cuenta -->
+      <div class="db-section-hdr" style="margin-top:1rem">
+        <div class="db-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+          Estudiantes con acceso
+        </div>
+        <span id="student-acc-count" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div id="student-acc-list"></div>
     </div>
 
     <!-- REPORTES -->
@@ -723,21 +1281,21 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
 </div>
 
 <!-- ═══ MODALES ═══ -->
-<!-- CAMARA ESCANEO — v7 MediaPipe + HUD -->
+<!-- CAMARA ESCANEO -->
 <div id="cam-modal" class="modal-overlay hidden">
   <div class="modal" style="max-width:520px;padding:1rem">
     <div class="modal-header" style="margin-bottom:.75rem">
       <h3 style="display:flex;align-items:center;gap:7px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;color:var(--accent)"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         Reconocimiento Facial
-        <span id="mp-badge" style="font-size:9px;padding:2px 7px;border-radius:20px;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);color:var(--accent);font-weight:700;letter-spacing:.3px">MediaPipe</span>
+        <span id="mp-badge" style="font-size:9px;padding:2px 7px;border-radius:20px;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);color:var(--accent);font-weight:700;letter-spacing:.3px">face-api.js</span>
       </h3>
       <button class="modal-close" onclick="closeCamModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
 
     <!-- Cámara con HUD -->
-    <div class="cam-box" id="cam-box" style="aspect-ratio:4/3">
-      <video id="cam-feed" autoplay playsinline muted style="width:100%;display:block;object-fit:cover;transform:scaleX(-1)"></video>
+    <div class="cam-box scan-box" id="cam-box">
+      <video id="cam-feed" autoplay playsinline muted style="transform:scaleX(-1)"></video>
       <canvas id="face-overlay" class="face-overlay"></canvas>
 
       <!-- HUD decorativo -->
@@ -757,6 +1315,14 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
       <!-- FPS counter -->
       <div class="cam-fps-hud" id="cam-fps-hud" style="display:none">
         <span id="fps-val">--</span> fps
+      </div>
+
+      <!-- Stream ESP32-CAM (capa sobre el video local) -->
+      <div class="esp-stream-layer" id="esp-stream-layer">
+        <img id="esp-stream-img" alt="ESP32-CAM" crossorigin="anonymous">
+        <div style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,.6);
+             color:var(--accent);font-size:10px;font-weight:700;border-radius:6px;
+             padding:2px 8px;font-family:var(--mono)">ESP32-CAM</div>
       </div>
 
       <!-- Placeholder -->
@@ -783,7 +1349,18 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
 
     <div class="cam-status" id="cam-st" style="margin-top:.625rem"></div>
 
-    <div class="modal-actions" style="margin-top:.75rem">
+    <!-- Selector fuente de cámara -->
+    <div class="esp-source-tab" id="cam-source-tabs" style="margin-top:.75rem">
+      <button class="esp-tab active" id="tab-local" onclick="setCamSource('local')">
+        📷 Cámara local
+      </button>
+      <button class="esp-tab" id="tab-esp32" onclick="setCamSource('esp32')">
+        📡 ESP32-CAM
+        <span id="esp-tab-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--muted);margin-left:4px;vertical-align:middle"></span>
+      </button>
+    </div>
+
+    <div class="modal-actions" style="margin-top:.625rem">
       <button class="btn-modal btn-modal-green" id="btn-cam-start" onclick="startScan()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
         Iniciar cámara
@@ -801,8 +1378,8 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
       <button class="modal-close" onclick="closeFaceModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="form-field"><label>Estudiante</label><select id="face-student-sel" onchange="onFaceStuChange()"></select></div>
-    <div class="cam-box" id="face-cam-box" style="aspect-ratio:4/3">
-      <video id="face-cam" autoplay playsinline muted style="transform:scaleX(-1);width:100%;display:block;object-fit:cover"></video>
+    <div class="cam-box" id="face-cam-box">
+      <video id="face-cam" autoplay playsinline muted style="transform:scaleX(-1)"></video>
       <div class="cam-ph" id="face-cam-ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><p>Presiona iniciar cámara</p></div>
       <div class="scan-frame" id="face-sf"><div class="sf-c sf-tl"></div><div class="sf-c sf-tr"></div><div class="sf-c sf-bl"></div><div class="sf-c sf-br"></div><div class="sf-beam"></div></div>
     </div>
@@ -880,7 +1457,7 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
     <p id="move-stu-name" style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:.875rem"></p>
     <div class="form-field"><label>Grado destino</label><div class="grade-pick-grid" id="move-grade-grid"></div></div>
     <div class="modal-actions">
-      <button class="btn-modal btn-modal-purple" onclick="confirmMove()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>Mover</button>
+      <button class="btn-modal btn-modal-purple" onclick="confirmMove()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg></button>
       <button class="btn-modal-cancel" onclick="closeMoveModal()">Cancelar</button>
     </div>
   </div>
@@ -1005,10 +1582,7 @@ canvas.face-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointe
 </div>
 
 <!-- face-api -->
-<!-- MediaPipe FaceDetection (Google) — ultrarrápido para detección en tiempo real -->
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js" crossorigin="anonymous"></script>
-<!-- face-api.js con modelo SSD MobileNet — para identificación/reconocimiento -->
+<!-- face-api.js — detección + reconocimiento facial en el navegador -->
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script>
 
@@ -1133,6 +1707,23 @@ function setupRealtimeListeners(){
     renderDbGrid(); updateStats(); buildDescriptors();
   }));
 
+  // Listener de dispositivos (ESP32-CAM)
+  fbListeners.push(db.collection('devices').onSnapshot(snap=>{
+    snap.docChanges().forEach(change=>{
+      if(change.type==='added'||change.type==='modified'){
+        const d=change.doc.data();
+        if(change.doc.id==='esp32cam'&&d.ip){
+          // ESP32 se registró o cambió de IP — actualizar automáticamente
+          const age=(Date.now()-new Date(d.updatedAt||0).getTime())/1000;
+          if(age<60&&(!ESP||!ESP.live)){ // menos de 1 min y no conectado
+            console.log('✓ ESP32-CAM detectado en Firebase:',d.ip);
+            if(typeof espConnect==='function') espConnect(d.ip,true);
+          }
+        }
+      }
+    });
+  }));
+
   fbListeners.push(db.collection('accounts').onSnapshot(snap=>{
     snap.docChanges().forEach(change=>{
       const data=change.doc.data();
@@ -1209,11 +1800,13 @@ function doLogin(){
 
   if((u===ADMIN_USER.toLowerCase()||u==='pidac_admin')&&p===ADMIN_PASS){
     currentUser={role:'admin',name:'Administrador',username:ADMIN_USER};
+    saveSession(currentUser);
     launchApp(); return;
   }
   const acc=accounts.find(a=>a.username.toLowerCase()===u&&a.password===p);
   if(acc){
     currentUser={...acc};
+    saveSession(currentUser);
     if(acc.role==='student') launchStudentPortal(acc);
     else launchApp();
     return;
@@ -1254,7 +1847,9 @@ function launchApp(){
   updateStats();
   renderDbGrid();
   populateAttGradeFilter();
-  showView('dashboard',document.getElementById('nav-dashboard'));
+  // Aplicar rol según el usuario
+  if(typeof applyRole === 'function') applyRole(currentUser?.role||'admin');
+  else showView('dashboard',document.getElementById('nav-dashboard'));
   checkNotifBanner();
   if(modelsLoaded) buildDescriptors();
   else loadModels().then(()=>buildDescriptors());
@@ -1283,8 +1878,10 @@ function launchStudentPortal(acc){
 
 function doLogout(){
   stopCameraAll();
-  fbListeners.forEach(u=>u()); fbListeners=[];
+  fbListeners.forEach(u=>{ try{u();}catch(e){} }); fbListeners=[];
   currentUser=null;
+  clearSession();
+  _excusesListenerSet=false; // permitir re-iniciar listener al volver a loguear
   document.getElementById('app-shell').classList.add('hidden');
   const sp=document.getElementById('student-portal'); if(sp) sp.classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
@@ -1300,6 +1897,16 @@ function onBodyLoad(){
   if(location.protocol==='file:'){
     const w=document.getElementById('file-warn');
     if(w) w.style.display='block';
+  }
+  // Intentar restaurar sesión automáticamente
+  if(typeof restoreSession==='function' && restoreSession()){
+    // Esperar a que Firebase cargue los datos y luego lanzar app
+    setTimeout(()=>{
+      if(currentUser){
+        if(currentUser.role==='student') launchStudentPortal(currentUser);
+        else launchApp();
+      }
+    }, 800);
   }
 }
 
@@ -1559,10 +2166,10 @@ function renderDbGrid(){
     const badge=face?'<div class="fc-badge fc-ok">✓ Reg.</div>':'<div class="fc-badge fc-no">✗ Sin foto</div>';
     const date=face?new Date(face.registeredAt).toLocaleDateString('es-CO',{day:'numeric',month:'short'}):'—';
     const adminBtns=isAdmin?`
-      <button class="fc-btn fc-edit" onclick="openAddStudentModal('${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>Editar</button>
-      <button class="fc-btn fc-move" onclick="openMoveModal('${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>Mover</button>
-      <button class="fc-btn fc-del" onclick="deleteStudent('${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>Eliminar</button>
-      ${face?`<button class="fc-btn fc-del" onclick="deleteFace('${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>Borrar foto</button>`:''}`:'';
+      <button class="fc-btn fc-edit" onclick="openAddStudentModal('${s.id}')" title="Editar estudiante"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg></button>
+      <button class="fc-btn fc-move" onclick="openMoveModal('${s.id}')" title="Mover de grado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg></button>
+      <button class="fc-btn fc-del" onclick="deleteStudent('${s.id}')" title="Eliminar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>
+      ${face?`<button class="fc-btn fc-del" onclick="deleteFace('${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg title="Borrar foto"></button>`:''}`:'';
     return `<div class="face-card">
       <div class="face-card-photo">${photo}${badge}</div>
       <div class="face-card-body">
@@ -1679,18 +2286,18 @@ function faceStopCam(){
   document.getElementById('btn-face-start').style.display='flex';
   document.getElementById('btn-face-capture').style.display='none';
 }
-function faceCapture(){
+async function faceCapture(){
   const v=document.getElementById('face-cam');
   const c=document.getElementById('face-canvas');
-  // Capturar a resolución completa para mejor descriptor
+  // Flash de pantalla blanca para iluminar la cara
+  await screenFlash(200);
+  // Pequeña pausa para que la cámara ajuste exposición post-flash
+  await new Promise(r=>setTimeout(r,120));
   c.width=v.videoWidth||640; c.height=v.videoHeight||480;
   const ctx=c.getContext('2d');
-  // Espejo horizontal (para que la foto quede natural)
   ctx.save(); ctx.scale(-1,1); ctx.drawImage(v,-c.width,0,c.width,c.height); ctx.restore();
-  // Flash visual de confirmación
-  v.style.filter='brightness(3)'; setTimeout(()=>v.style.filter='',200);
-  // Guardar en alta calidad para mejor reconocimiento posterior
-  faceCaptured=c.toDataURL('image/jpeg',0.92);
+  v.style.filter='brightness(2)'; setTimeout(()=>v.style.filter='',150);
+  faceCaptured=c.toDataURL('image/jpeg',0.95);
   const id=document.getElementById('face-student-sel').value;
   const s=students.find(x=>x.id===id);
   document.getElementById('face-thumb').innerHTML=`<img src="${faceCaptured}" alt="foto">`;
@@ -1716,6 +2323,11 @@ async function faceSave(){
 //  STATS & CHARTS
 // ═══════════════════════════════════════════════════════
 function updateStats(){
+  // También actualizar stats del profesor si está activo
+  if(currentUser?.role==='teacher' && typeof updateTeacherStats==='function'){
+    updateTeacherStats();
+    renderTeacherTable(document.getElementById('teacher-search')?.value||'');
+  }
   const p=students.filter(s=>s.status==='present').length;
   const a=students.filter(s=>s.status==='absent').length;
   const l=students.filter(s=>s.status==='late').length;
@@ -1821,35 +2433,7 @@ async function deleteAccount(id){
   if(!confirm('¿Eliminar esta cuenta?'))return;
   await fbDel('accounts',id);
 }
-function renderAccounts(){
-  const container=document.getElementById('accounts-list'); if(!container)return;
-  const teachers=accounts.filter(a=>a.role==='teacher');
-  const stuAccs=accounts.filter(a=>a.role==='student');
-  const rc={admin:'var(--purple)',teacher:'var(--accent2)',student:'var(--accent)'};
-  const row=(a,del)=>{
-    const g=grades.find(x=>x.id===a.gradeId);
-    const s=students.find(x=>x.id===a.studentId);
-    const sub=g?g.name:s?s.name:'';
-    return `<div class="acc-row">
-      <div class="acc-av" style="background:${rc[a.role]||'var(--muted)'}22;color:${rc[a.role]||'var(--muted)'}">${toInitials(a.name).toUpperCase()}</div>
-      <div class="acc-info"><div class="acc-name">${a.name}</div><div class="acc-user">@${a.username}${sub?' · '+sub:''}</div></div>
-      ${del?`<button class="acc-del" onclick="deleteAccount('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>`:''}
-    </div>`;
-  };
-  container.innerHTML=`
-  <div class="acc-section">
-    <div class="acc-hdr"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Administradores</h4></div>
-    <div class="acc-row"><div class="acc-av" style="background:rgba(168,85,247,.15);color:var(--purple)">PA</div><div class="acc-info"><div class="acc-name">Administrador PIDAC</div><div class="acc-user">@${ADMIN_USER} · Cuenta principal</div></div></div>
-  </div>
-  <div class="acc-section">
-    <div class="acc-hdr"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Profesores (${teachers.length})</h4><button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="openAccountModal('teacher')">+ Agregar</button></div>
-    ${teachers.length?teachers.map(a=>row(a,true)).join(''):'<div class="acc-empty">No hay profesores</div>'}
-  </div>
-  <div class="acc-section">
-    <div class="acc-hdr"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>Estudiantes (${stuAccs.length})</h4><button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="openAccountModal('student')">+ Agregar</button></div>
-    ${stuAccs.length?stuAccs.map(a=>row(a,true)).join(''):'<div class="acc-empty">No hay cuentas de estudiantes</div>'}
-  </div>`;
-}
+
 
 // ═══════════════════════════════════════════════════════
 //  SELF-REGISTRATION
@@ -2096,12 +2680,12 @@ async function confirmImport(){
 }
 
 // ═══════════════════════════════════════════════════════
-//  MOTOR IA v7 — MediaPipe (detección) + face-api SSD (identidad)
+//  MOTOR IA v8 — face-api.js TinyFaceDetector optimizado
 // ═══════════════════════════════════════════════════════
 
 // ── Constantes de reconocimiento
-const FR_THRESHOLD  = 0.40;   // distancia máxima para match (más bajo = más estricto)
-const FR_CONFIRM    = 2;       // frames consecutivos para confirmar identidad
+const FR_THRESHOLD  = 0.45;   // distancia máxima para match (más bajo = más estricto)
+const FR_CONFIRM    = 1;       // frames consecutivos para confirmar identidad
 const FR_COOLDOWN   = 12000;   // ms sin re-marcar al mismo estudiante
 const confirmBuffer = {};      // studentId → frames consecutivos detectados
 
@@ -2112,48 +2696,26 @@ let mpDetector      = null;    // instancia MediaPipe FaceDetection
 let mpReady         = false;   // MediaPipe lista
 let ssdReady        = false;   // face-api SSD lista
 
-// ── Cargar MediaPipe FaceDetection
-async function loadMediaPipe(){
-  return new Promise((resolve)=>{
-    if(typeof FaceDetection === 'undefined'){
-      console.warn('MediaPipe no disponible — usando TinyFaceDetector');
-      resolve(false); return;
-    }
-    mpDetector = new FaceDetection({
-      locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${f}`
-    });
-    mpDetector.setOptions({
-      model: 'short',       // 'short' = ultra rápido ≤2m distancia (ideal aula)
-      minDetectionConfidence: 0.6
-    });
-    mpDetector.onResults(onMpResults);
-    mpDetector.initialize().then(()=>{ mpReady=true; resolve(true); }).catch(()=>resolve(false));
-  });
-}
+// MediaPipe eliminado — usar face-api.js puro
+async function loadMediaPipe(){ return false; }
 
 // ── Cargar face-api con SSD MobileNet (mejor que TinyFaceDetector)
 async function loadFaceApiSSD(){
   try{
-    await Promise.all([
-      faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+    // Cargar TinyFaceDetector (rápido) + reconocimiento
+    // NO cargar SSD porque requiere más memoria y es más lento de inicializar
+    const timeout=new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),15000));
+    await Promise.race([Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL),
       faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-    ]);
+    ]),timeout]);
     ssdReady = true;
-    console.log('✓ face-api SSD MobileNet cargado');
+    console.log('✓ face-api TinyFaceDetector + Recognition cargado');
     return true;
   } catch(e){
-    // Fallback a TinyFaceDetector si SSD falla
-    console.warn('SSD falló, cargando TinyFaceDetector como backup:', e.message);
-    try{
-      await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-        faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL),
-        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-      ]);
-      ssdReady = true;
-      return true;
-    } catch(e2){ return false; }
+    console.error('face-api falló:', e.message);
+    return false;
   }
 }
 
@@ -2163,11 +2725,12 @@ function loadModels(){
   modelsPromise = Promise.all([loadMediaPipe(), loadFaceApiSSD()])
     .then(([mp, ssd])=>{
       modelsLoaded = true;
-      console.log(`✓ Motor IA: MediaPipe=${mp} SSD=${ssd}`);
+      console.log(`✓ Motor IA listo`);
     });
   return modelsPromise;
 }
-loadModels();
+// Precargar modelos en background (listos cuando abras la cámara)
+setTimeout(()=>loadModels(),1500);
 
 function _getFace(id){ return (faces||{})[id]||null; }
 
@@ -2202,16 +2765,18 @@ async function buildDescriptors(){
   if(!modelsLoaded) return;
   faceDescriptors=[];
   let built=0,failed=0;
-  const opts=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.1,inputSize:160});
+  const opts1=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.1,inputSize:160});
   const opts2=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.08,inputSize:320});
   const entries=Object.entries(faces||{});
   if(!entries.length){faceMatcher=null;return;}
+
+  // Procesar en lotes de 3 en paralelo
   for(let i=0;i<entries.length;i+=3){
     await Promise.all(entries.slice(i,i+3).map(async([sid,data])=>{
       if(!data.photo)return;
       try{
         const img=await makeImg(data.photo,160);
-        let det=await faceapi.detectSingleFace(img,opts).withFaceLandmarks(true).withFaceDescriptor();
+        let det=await faceapi.detectSingleFace(img,opts1).withFaceLandmarks(true).withFaceDescriptor();
         if(!det){
           const img2=await makeImg(data.photo,320);
           det=await faceapi.detectSingleFace(img2,opts2).withFaceLandmarks(true).withFaceDescriptor();
@@ -2226,7 +2791,7 @@ async function buildDescriptors(){
       faceDescriptors.map(fd=>new faceapi.LabeledFaceDescriptors(fd.studentId,fd.descriptors)),
       FR_THRESHOLD
     );
-    console.log('FaceMatcher: '+built+' OK, '+failed+' sin descriptor');
+    console.log(`✓ FaceMatcher: ${built} OK, ${failed} sin descriptor`);
   }else{faceMatcher=null;}
 }
 
@@ -2244,15 +2809,6 @@ function makeImg(dataURL,size){
 }
 
 
-// ══════════════════════════════════════════════════════════════
-//  LOOP DE DETECCIÓN — MediaPipe primero, face-api para identidad
-// ══════════════════════════════════════════════════════════════
-let _mpLastBoxes  = [];   // últimas cajas detectadas por MediaPipe
-let _fpsFrames    = 0;
-let _fpsLast      = 0;
-let _faceLoopId   = null;
-
-// Callback de MediaPipe — solo guarda las bounding boxes (es sincrónico y muy rápido)
 function onMpResults(results){
   _mpLastBoxes = (results.detections||[]).map(d=>{
     const bb = d.boundingBox;
@@ -2266,123 +2822,7 @@ function onMpResults(results){
   });
 }
 
-async function runFaceLoop(){
-  const video   = document.getElementById('cam-feed');
-  const overlay = document.getElementById('face-overlay');
-  if(!video||!scanActive) return;
 
-  const ctx = overlay.getContext('2d');
-  overlay.style.transform='scaleX(-1)';
-
-  // OffscreenCanvas 320x240 para detección rápida
-  const off=document.createElement('canvas');
-  off.width=320; off.height=240;
-  const offCtx=off.getContext('2d',{willReadFrequently:true});
-
-  const OPTS=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.38,inputSize:224});
-  let lastRecog=0, cachedDets=[];
-  const RECOG_MS=180;
-
-  const loop=async()=>{
-    if(!scanActive){ctx.clearRect(0,0,overlay.width,overlay.height);return;}
-
-    // ── Fuente de video: ESP32 img o cámara local
-    const espImg = window._espScanActive ? document.getElementById('esp-stream-img') : null;
-    const useEsp = espImg && espImg.naturalWidth>10 && espImg.naturalHeight>10 && espImg.complete;
-    const src2   = useEsp ? espImg : video;
-
-    // Sync canvas al tamaño real de la fuente
-    const vw = useEsp ? espImg.naturalWidth  : (video.videoWidth  || 320);
-    const vh = useEsp ? espImg.naturalHeight : (video.videoHeight || 240);
-    if(overlay.width!==vw||overlay.height!==vh){overlay.width=vw;overlay.height=vh;}
-
-    // FPS
-    _fpsFrames++;
-    const now=performance.now();
-    if(now-_fpsLast>=1000){
-      const el=document.getElementById('fps-val');
-      if(el)el.textContent=Math.round(_fpsFrames*1000/(now-_fpsLast));
-      _fpsFrames=0;_fpsLast=now;
-    }
-
-    // Detección + reconocimiento throttled
-    if(modelsLoaded&&now-lastRecog>=RECOG_MS){
-      lastRecog=now;
-      try{
-        // Dibujar frame en offCanvas para procesar más rápido
-        offCtx.drawImage(src2,0,0,320,240);
-        const sx=vw/320, sy=vh/240;
-
-        if(faceMatcher){
-          const dets=await faceapi.detectAllFaces(off,OPTS)
-            .withFaceLandmarks(true).withFaceDescriptors();
-          cachedDets=dets.map(det=>{
-            const b=det.detection.box;
-            const match=faceMatcher.findBestMatch(det.descriptor);
-            const dist=match.distance;
-            const ok=match.label!=='unknown'&&dist<FR_THRESHOLD;
-            const conf=ok?Math.max(0,Math.min(100,Math.round((1-dist/FR_THRESHOLD)*100))):null;
-            if(ok){
-              const sid=match.label;
-              confirmBuffer[sid]=(confirmBuffer[sid]||0)+1;
-              if(confirmBuffer[sid]>=FR_CONFIRM&&!recentlyMarked.has(sid)){
-                recentlyMarked.add(sid);confirmBuffer[sid]=0;
-                const stu=students.find(s=>s.id===sid);
-                if(stu){
-                  stu.status='present';
-                  fbSet('students',sid,{status:'present',updatedAt:new Date().toISOString()});
-                  renderTable(document.getElementById('att-search')?.value||'');
-                  updateStats();addDetectedPanel(stu,conf);showQuickToast(stu.name);
-                  if(typeof sendPushNotification==='function')
-                    sendPushNotification('✓ Asistencia',stu.name+' — presente');
-                  setTimeout(()=>recentlyMarked.delete(sid),FR_COOLDOWN);
-                }
-              }
-            }
-            const stu=ok?students.find(s=>s.id===match.label):null;
-            return{
-              x:b.x*sx, y:b.y*sy,
-              w:b.width*sx, h:b.height*sy,
-              label:stu?stu.name.split(' ').slice(0,2).join(' '):(ok?'...':'Desconocido'),
-              color:stu?(conf>=85?'#00E5A0':'#7FFFD4'):'#FF3D5A',
-              conf, studentId:ok?match.label:null
-            };
-          });
-          Object.keys(confirmBuffer).forEach(k=>{
-            if(!cachedDets.find(d=>d.studentId===k))confirmBuffer[k]=0;
-          });
-        } else {
-          const dets=await faceapi.detectAllFaces(off,OPTS);
-          cachedDets=dets.map(d=>({
-            x:d.box.x*sx, y:d.box.y*sy,
-            w:d.box.width*sx, h:d.box.height*sy,
-            label:'Detectado',color:'#00B8FF',conf:null,studentId:null
-          }));
-        }
-      }catch(e){}
-    }
-
-    // Dibujar
-    ctx.clearRect(0,0,overlay.width,overlay.height);
-    const dot=document.getElementById('hud-dot');
-    const lbl=document.getElementById('hud-label');
-    if(dot&&lbl){
-      if(!modelsLoaded){dot.className='hud-dot yellow';lbl.textContent='CARGANDO IA...';}
-      else if(cachedDets.length>0){
-        dot.className='hud-dot';
-        lbl.textContent=cachedDets.length===1?'1 CARA':cachedDets.length+' CARAS';
-      }else{
-        dot.className='hud-dot yellow';
-        lbl.textContent=faceMatcher?'BUSCANDO...':'ACERCA TU CARA';
-      }
-    }
-    cachedDets.forEach(d=>{
-      drawScanBox(ctx,d.x,d.y,d.w,d.h,d.color,d.label,d.conf,!!d.studentId);
-    });
-    _faceLoopId=requestAnimationFrame(loop);
-  };
-  _faceLoopId=requestAnimationFrame(loop);
-}
 
 function drawScanBox(ctx, x, y, w, h, color, label, confPct, student){
   const t   = performance.now();
@@ -2514,196 +2954,240 @@ function closeCamModal(){
   btn.innerHTML=svgCam+' Iniciar cámara'; btn.onclick=startScan; btn.style.background='var(--accent)';
 }
 async function startScan(){
-  const loadEl=document.getElementById('model-loading');
-  const st=document.getElementById('cam-st');
+  const loadEl = document.getElementById('model-loading');
+  const loadTx = document.getElementById('model-loading-txt');
+  const st     = document.getElementById('cam-st');
+  const ph     = document.getElementById('cam-ph');
 
-  // Check if camera API exists
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+  // ── Si ESP32 está seleccionado, usar su stream directamente
+  if(ESP.source === 'esp32' && ESP.ip && ESP.live){
+    if(ph) ph.style.display='none';
+    // Activar capa del stream ESP32
+    espActivateStream();
+    window._espScanActive = true;
+    // Mostrar HUD activo
+    const fpsHud = document.getElementById('cam-fps-hud');
+    if(fpsHud) fpsHud.style.display='block';
+    const hdot = document.getElementById('hud-dot');
+    const hlbl = document.getElementById('hud-label');
+    if(hdot) hdot.className='hud-dot';
+    if(hlbl) hlbl.textContent='ESP32-CAM ACTIVO';
+    const btn = document.getElementById('btn-cam-start');
+    if(btn){ btn.innerHTML=svgStop+' Detener'; btn.onclick=stopCam; btn.style.background='var(--danger)'; }
+    st.className='cam-status info';
+    scanActive = true;
+    _fpsLast = performance.now(); _fpsFrames = 0;
+    // Cargar modelos y reconocimiento en segundo plano
+    if(!modelsLoaded){
+      if(loadEl) loadEl.classList.remove('hidden');
+      if(loadTx) loadTx.textContent='Cargando IA...';
+      await loadModels();
+      if(loadTx) loadTx.textContent='Preparando rostros...';
+      await buildDescriptors();
+      if(loadEl) loadEl.classList.add('hidden');
+    } else {
+      await buildDescriptors();
+    }
+    if(hdot) hdot.className='hud-dot';
+    if(hlbl) hlbl.textContent='ESP32-CAM ACTIVO';
+    st.innerHTML=svgInfo+(faceMatcher
+      ?'ESP32-CAM activa con <strong>IA lista</strong> — reconociendo rostros…'
+      :'ESP32-CAM activa. <strong>Registra rostros</strong> para reconocer.');
+    runFaceLoop();
+    return; // no abrir cámara local
+  }
+
+  if(!navigator.mediaDevices?.getUserMedia){
     st.className='cam-status error';
-    const isFile=location.protocol==='file:';
-    st.innerHTML=svgX+(isFile
-      ?'<strong>Abre la app desde GitHub Pages</strong>, no desde un archivo local. La cámara no funciona en file://'
-      :'Tu navegador no soporta cámara. Usa Chrome o Firefox actualizado.');
+    st.innerHTML=svgX+(location.protocol==='file:'
+      ?'<strong>Abre desde GitHub Pages</strong> — la cámara no funciona en file://'
+      :'Navegador no soporta cámara. Usa Chrome.');
     return;
   }
 
-  if(!modelsLoaded) loadEl.classList.remove('hidden');
-
+  // ── PASO 1: Obtener stream local y mostrar video YA ───────
+  let stream;
   try{
-    // Try with ideal constraints first, fall back to basic
-    let stream;
     try{
-      stream=await navigator.mediaDevices.getUserMedia({
-        video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false
+      stream = await navigator.mediaDevices.getUserMedia({
+        video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:720},
+                frameRate:{ideal:30, min:15} },
+        audio:false
       });
-    }catch(e1){
-      // Fallback: just ask for any video
-      stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+    } catch(e){
+      stream = await navigator.mediaDevices.getUserMedia({video:true, audio:false});
     }
-
-    await loadModels();
-    await buildDescriptors();
-    loadEl.classList.add('hidden');
-    cameraStream=stream;
-    const v=document.getElementById('cam-feed');
-    v.srcObject=cameraStream;
-    await new Promise((res,rej)=>{
-      v.onloadedmetadata=res; v.onerror=rej; setTimeout(res,3000);
-    });
-    await v.play().catch(()=>{});
-
-    document.getElementById('cam-ph').style.display='none';
-    const fpsHud=document.getElementById('cam-fps-hud');
-    if(fpsHud) fpsHud.style.display='block';
-    // HUD status → activo
-    const hdot=document.getElementById('hud-dot');
-    const hlbl=document.getElementById('hud-label');
-    if(hdot) hdot.className='hud-dot';
-    if(hlbl) hlbl.textContent='ACTIVO';
-    scanActive=true;
-    _fpsLast=performance.now(); _fpsFrames=0;
-
-    const btn=document.getElementById('btn-cam-start');
-    btn.innerHTML=svgStop+' Detener'; btn.onclick=stopCam; btn.style.background='var(--danger)';
-    st.className='cam-status info';
-    const engine = mpReady ? 'MediaPipe + SSD' : (ssdReady ? 'SSD MobileNet' : 'TinyFaceDetector');
-    st.innerHTML=svgInfo+(faceMatcher
-      ? `Escaneando con <strong>${engine}</strong>…`
-      : `Motor <strong>${engine}</strong> listo. <strong>Registra rostros</strong> para reconocer.`);
-    runFaceLoop();
-
-  }catch(err){
-    loadEl.classList.add('hidden');
+  } catch(err){
     st.className='cam-status error';
-    let msg='No se pudo acceder a la cámara. ';
-    if(err.name==='NotAllowedError'||err.name==='PermissionDeniedError')
-      msg+='<strong>Permiso denegado</strong> — ve a la barra del navegador, clic en el candado 🔒 y permite la cámara.';
-    else if(err.name==='NotFoundError'||err.name==='DevicesNotFoundError')
-      msg+='No se encontró ninguna cámara en este dispositivo.';
-    else if(err.name==='NotReadableError'||err.name==='TrackStartError')
-      msg+='La cámara está siendo usada por otra app. Ciérrala e intenta de nuevo.';
-    else if(location.protocol==='file:')
-      msg+='<strong>Abre desde GitHub Pages</strong>, no desde un archivo local (file://).';
+    if(err.name==='NotAllowedError')
+      st.innerHTML=svgX+'<strong>Permiso denegado</strong> — clic en el candado 🔒 → Permitir cámara.';
+    else if(err.name==='NotFoundError')
+      st.innerHTML=svgX+'No se encontró cámara en este dispositivo.';
+    else if(err.name==='NotReadableError')
+      st.innerHTML=svgX+'Cámara en uso por otra app. Ciérrala e intenta de nuevo.';
     else
-      msg+=err.message||err.name||'Error desconocido.';
-    st.innerHTML=svgX+msg;
+      st.innerHTML=svgX+'Error: '+(err.message||err.name);
     console.error('Camera error:',err);
+    return;
   }
+
+  // Asignar stream al video INMEDIATAMENTE
+  cameraStream = stream;
+  const v = document.getElementById('cam-feed');
+  v.srcObject = stream;
+  v.onloadedmetadata = ()=> v.play().catch(()=>{});
+  await new Promise(res=>{
+    if(v.readyState >= 2){ res(); return; }
+    v.addEventListener('loadeddata', res, {once:true});
+    setTimeout(res, 1500);
+  });
+
+  if(ph) ph.style.display='none';
+  const fpsHud = document.getElementById('cam-fps-hud');
+  if(fpsHud) fpsHud.style.display='block';
+  const hdot = document.getElementById('hud-dot');
+  const hlbl = document.getElementById('hud-label');
+  if(hdot) hdot.className='hud-dot yellow';
+  if(hlbl) hlbl.textContent='CARGANDO IA…';
+
+  const btn = document.getElementById('btn-cam-start');
+  if(btn){ btn.innerHTML=svgStop+' Detener'; btn.onclick=stopCam; btn.style.background='var(--danger)'; }
+
+  // ── PASO 2: Cargar modelos en segundo plano ───────────────
+  scanActive = true;
+  _fpsLast = performance.now(); _fpsFrames = 0;
+
+  // Iniciar loop de detección inmediatamente (básico sin reconocimiento)
+  runFaceLoop();
+
+  // Cargar modelos sin bloquear el video
+  if(!modelsLoaded){
+    if(loadEl) loadEl.classList.remove('hidden');
+    if(loadTx) loadTx.textContent = 'Cargando detector…';
+    await loadModels();
+    if(loadTx) loadTx.textContent = 'Preparando rostros…';
+    await buildDescriptors();
+    if(loadEl) loadEl.classList.add('hidden');
+  } else {
+    await buildDescriptors();
+  }
+
+  if(hdot) hdot.className='hud-dot';
+  if(hlbl) hlbl.textContent='ACTIVO';
+  st.className='cam-status info';
+  st.innerHTML=svgInfo+(faceMatcher
+    ?'Escaneando con <strong>IA lista</strong> — buscando rostros registrados…'
+    :'Cámara activa. <strong>Registra rostros</strong> en Estudiantes para reconocer.');
 }
+
 
 async function runFaceLoop(){
   const video   = document.getElementById('cam-feed');
   const overlay = document.getElementById('face-overlay');
-  const camBox  = document.getElementById('cam-box');
-  if(!video || !scanActive) return;
-
-  // Sincronizar canvas con el video
-  const syncOverlay = ()=>{
-    const vw = video.videoWidth  || 640;
-    const vh = video.videoHeight || 480;
-    if(overlay.width !== vw){ overlay.width  = vw; }
-    if(overlay.height !== vh){ overlay.height = vh; }
-  };
+  if(!video||!scanActive) return;
   const ctx = overlay.getContext('2d');
-  overlay.style.transform = 'scaleX(-1)'; // espejo igual que el video
+  overlay.style.transform='scaleX(-1)';
 
-  // Opciones del detector optimizadas
-  const detOpts = new faceapi.TinyFaceDetectorOptions({
-    scoreThreshold: 0.45,
-    inputSize: 416   // 416 = balance precisión/velocidad (320 muy rápido, 608 muy lento)
-  });
+  // OffscreenCanvas 320x240 para detección rápida
+  const off=document.createElement('canvas');
+  off.width=320;off.height=240;
+  const offCtx=off.getContext('2d',{willReadFrequently:true});
 
-  // Throttle: detectar máx cada 120ms (~8 fps) para no quemar CPU
-  let lastDetect = 0;
-  const DETECT_INTERVAL = 120;
+  // Una sola instancia de opciones (no recrear cada frame)
+  const OPTS=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.38,inputSize:224});
 
-  const detect = async () => {
-    if(!scanActive) return;
-    syncOverlay();
+  let lastRecog=0, cachedDets=[];
+  const RECOG_MS=180; // ~5fps de IA — suficiente para aula
 
-    const now = performance.now();
-    if(now - lastDetect < DETECT_INTERVAL){
-      scanLoop = requestAnimationFrame(detect);
-      return;
-    }
-    lastDetect = now;
+  const loop=async()=>{
+    if(!scanActive){ctx.clearRect(0,0,overlay.width,overlay.height);return;}
 
-    let detections = [];
-    try{
-      if(faceMatcher){
-        detections = await faceapi
-          .detectAllFaces(video, detOpts)
-          .withFaceLandmarks(true)
-          .withFaceDescriptors();
-      } else {
-        detections = await faceapi.detectAllFaces(video, detOpts);
-      }
-    } catch(e){ /* saltar frame */ }
+    // Sync canvas
+    const vw=video.videoWidth||320,vh=video.videoHeight||240;
+    if(overlay.width!==vw||overlay.height!==vh){overlay.width=vw;overlay.height=vh;}
 
-    ctx.clearRect(0, 0, overlay.width, overlay.height);
-    const scaleX = overlay.width  / (video.videoWidth  || 640);
-    const scaleY = overlay.height / (video.videoHeight || 480);
-
-    // Actualizar status
-    const st = document.getElementById('cam-st');
-    if(st && faceMatcher){
-      st.className = 'cam-status info';
-      st.innerHTML = detections.length > 0
-        ? svgInfo + `Detectando <strong>${detections.length}</strong> cara(s)…`
-        : svgInfo + 'Buscando rostros…';
+    // FPS
+    _fpsFrames++;
+    const now=performance.now();
+    if(now-_fpsLast>=1000){
+      const el=document.getElementById('fps-val');
+      if(el)el.textContent=Math.round(_fpsFrames*1000/(now-_fpsLast));
+      _fpsFrames=0;_fpsLast=now;
     }
 
-    for(const det of detections){
-      const box = det.detection ? det.detection.box : det.box;
-      if(!box) continue;
-      const bx = box.x * scaleX;
-      const by = box.y * scaleY;
-      const bw = box.width  * scaleX;
-      const bh = box.height * scaleY;
-      let label = 'Detectado', color = '#00B8FF', confPct = null;
+    // Detección + reconocimiento throttled
+    if(modelsLoaded&&now-lastRecog>=RECOG_MS){
+      lastRecog=now;
+      try{
+        offCtx.drawImage(video,0,0,320,240);
+        const sx=vw/320,sy=vh/240;
 
-      if(faceMatcher && det.descriptor){
-        const match = faceMatcher.findBestMatch(det.descriptor);
-        const dist  = match.distance;
-
-        if(match.label !== 'unknown'){
-          const student = students.find(s => s.id === match.label);
-          if(student){
-            confPct = Math.max(0, Math.min(100, Math.round((1 - dist/0.42)*100)));
-            label   = student.name.split(' ').slice(0,2).join(' ');
-            color   = confPct >= 85 ? '#00E5A0' : confPct >= 60 ? '#7FFFD4' : '#FFAA00';
-
-            // Confirmación multi-frame (evita marcas por frames borrosos)
-            confirmBuffer[student.id] = (confirmBuffer[student.id]||0) + 1;
-
-            if(confirmBuffer[student.id] >= 2 && !recentlyMarked.has(student.id)){
-              recentlyMarked.add(student.id);
-              confirmBuffer[student.id] = 0;
-              student.status = 'present';
-              fbSet('students', student.id, {status:'present', updatedAt:new Date().toISOString()});
-              renderTable(document.getElementById('att-search')?.value||'');
-              updateStats();
-              addDetectedPanel(student);
-              showQuickToast(student.name);
-              if(typeof sendPushNotification === 'function')
-                sendPushNotification('✓ Asistencia', student.name + ' — presente');
-              setTimeout(()=> recentlyMarked.delete(student.id), 12000);
+        if(faceMatcher){
+          const dets=await faceapi.detectAllFaces(off,OPTS)
+            .withFaceLandmarks(true).withFaceDescriptors();
+          cachedDets=dets.map(det=>{
+            const b=det.detection.box;
+            const match=faceMatcher.findBestMatch(det.descriptor);
+            const dist=match.distance;
+            const ok=match.label!=='unknown'&&dist<FR_THRESHOLD;
+            const conf=ok?Math.max(0,Math.min(100,Math.round((1-dist/FR_THRESHOLD)*100))):null;
+            if(ok){
+              const sid=match.label;
+              confirmBuffer[sid]=(confirmBuffer[sid]||0)+1;
+              if(confirmBuffer[sid]>=FR_CONFIRM&&!recentlyMarked.has(sid)){
+                recentlyMarked.add(sid);confirmBuffer[sid]=0;
+                const stu=students.find(s=>s.id===sid);
+                if(stu){
+                  stu.status='present';
+                  fbSet('students',sid,{status:'present',updatedAt:new Date().toISOString()});
+                  renderTable(document.getElementById('att-search')?.value||'');
+                  updateStats();addDetectedPanel(stu,conf);showQuickToast(stu.name);
+                  if(typeof sendPushNotification==='function')
+                    sendPushNotification('✓ Asistencia',stu.name+' — presente');
+                  setTimeout(()=>recentlyMarked.delete(sid),FR_COOLDOWN);
+                }
+              }
             }
-          }
+            const stu=ok?students.find(s=>s.id===match.label):null;
+            return{
+              x:b.x*sx,y:b.y*sy,w:b.width*sx,h:b.height*sy,
+              label:stu?stu.name.split(' ').slice(0,2).join(' '):(ok?'...':'Desconocido'),
+              color:stu?(conf>=85?'#00E5A0':'#7FFFD4'):'#FF3D5A',
+              conf,studentId:ok?match.label:null
+            };
+          });
+          Object.keys(confirmBuffer).forEach(k=>{
+            if(!cachedDets.find(d=>d.studentId===k))confirmBuffer[k]=0;
+          });
         } else {
-          label = 'Desconocido'; color = '#FF3D5A';
-          Object.keys(confirmBuffer).forEach(k=>{ if(confirmBuffer[k]>0) confirmBuffer[k]--; });
+          const dets=await faceapi.detectAllFaces(off,OPTS);
+          cachedDets=dets.map(d=>({
+            x:d.box.x*sx,y:d.box.y*sy,w:d.box.width*sx,h:d.box.height*sy,
+            label:'Detectado',color:'#00B8FF',conf:null,studentId:null
+          }));
         }
-      }
-      drawFaceBox(ctx, bx, by, bw, bh, color, label, confPct);
+      }catch(e){}
     }
 
-    if(detections.length === 0) Object.keys(confirmBuffer).forEach(k=>{ confirmBuffer[k]=0; });
-    if(scanActive) scanLoop = requestAnimationFrame(detect);
+    // Dibujar
+    ctx.clearRect(0,0,overlay.width,overlay.height);
+    const dot=document.getElementById('hud-dot');
+    const lbl=document.getElementById('hud-label');
+    if(dot&&lbl){
+      if(!modelsLoaded){dot.className='hud-dot yellow';lbl.textContent='CARGANDO IA…';}
+      else if(cachedDets.length>0){
+        dot.className='hud-dot';
+        lbl.textContent=cachedDets.length===1?'1 CARA':cachedDets.length+' CARAS';
+      }else{dot.className='hud-dot yellow';lbl.textContent=faceMatcher?'BUSCANDO...':'ACERCA TU CARA';}
+    }
+    cachedDets.forEach(d=>{
+      drawScanBox(ctx,d.x,d.y,d.w,d.h,d.color,d.label,d.conf,!!d.studentId);
+    });
+    _faceLoopId=requestAnimationFrame(loop);
   };
-
-  scanLoop = requestAnimationFrame(detect);
+  _faceLoopId=requestAnimationFrame(loop);
 }
+
 
 function drawFaceBox(ctx, x, y, w, h, color, label, confPct){
   const r = 8;
@@ -2832,6 +3316,8 @@ function showQuickToast(name){
 
 function stopCam(){
   scanActive=false;
+  window._espScanActive=false;
+  espDeactivateStream();
   if(scanLoop){cancelAnimationFrame(scanLoop);scanLoop=null;}
   if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
   const v=document.getElementById('cam-feed'); if(v) v.srcObject=null;
@@ -3022,65 +3508,1036 @@ function checkNotifBanner(){
   }
 }
 // ══ FIN PWA ═══════════════════════════════════════════════════
+</script>
+<!-- ══ FIN PWA ════════════════════════════════════════════════ -->
 
+
+<!-- ══ ESP32-CAM PANEL ═════════════════════════════════════════ -->
+<div class="esp-pill" id="espPill">
+  <div class="esp-card" id="espCard">
+    <div class="esp-card-hdr">
+      <div class="esp-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        ESP32-CAM
+      </div>
+      <button class="esp-close" onclick="espToggle()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Estado -->
+    <div class="esp-status-row">
+      <span class="esp-s-dot" id="espDot"></span>
+      <span class="esp-s-txt" id="espTxt">Sin cámara</span>
+      <span class="esp-s-fps" id="espFpsLbl"></span>
+    </div>
+
+    <!-- IP manual -->
+    <div style="display:flex;gap:7px">
+      <input type="text" id="espManualIp" placeholder="10.131.184.133"
+        style="flex:1;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);
+               border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none"
+        onkeydown="if(event.key==='Enter') espConnect(document.getElementById('espManualIp').value)">
+      <button class="esp-btn esp-btn-g" style="width:auto;padding:9px 14px" 
+              onclick="espConnect(document.getElementById('espManualIp').value)">
+        Conectar
+      </button>
+    </div>
+
+    <!-- Botón auto-detectar (lee Firebase) -->
+    <button class="esp-btn" id="espAutoBtn" onclick="espAutoDetect()"
+      style="background:var(--surface2);border:1px solid var(--border);color:var(--text);width:100%;
+             padding:9px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;
+             font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      Detectar automáticamente
+    </button>
+
+    <div class="esp-scan-res" id="espScanRes"></div>
+
+    <!-- Controles (solo visibles cuando conectado) -->
+    <div id="espConnected" style="display:none;flex-direction:column;gap:8px">
+      <div class="esp-controls">
+        <select onchange="espCtrl('framesize',this.value)" title="Resolución">
+          <option value="5">QVGA 320×240 (30fps)</option>
+          <option value="8" selected>VGA 640×480 (25fps)</option>
+          <option value="9">SVGA 800×600 (18fps)</option>
+        </select>
+        <select onchange="espCtrl('quality',this.value)" title="Calidad">
+          <option value="10">Alta calidad</option>
+          <option value="15" selected>Media</option>
+          <option value="25">Baja</option>
+        </select>
+      </div>
+      <button class="esp-btn esp-btn-r" onclick="espDisconnect()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+        </svg>
+        Desconectar
+      </button>
+    </div>
+  </div>
+
+  <button class="esp-fab" id="espFab" onclick="espToggle()" title="ESP32-CAM">
+    📷
+    <span class="esp-fab-status" id="espFabStatus"></span>
+  </button>
+</div>
+
+<script>
+// ══ ESP32-CAM MODULE — Integración con Firebase ══════════════
+const ESP = {
+  ip: null, live: false,
+  fc: 0, t0: 0, fpsTimer: null,
+  source: 'local'  // 'local' | 'esp32'
+};
+
+// ── Estado visual
+function espSetStatus(state, txt){
+  const dot  = document.getElementById('espDot');
+  const fab  = document.getElementById('espFabStatus');
+  const label= document.getElementById('espTxt');
+  const map  = {on:'on', err:'err', scan:'scan', '':''};
+  dot.className  = 'esp-s-dot ' + (map[state]||'');
+  fab.className  = 'esp-fab-status ' + (map[state]||'');
+  label.textContent = txt;
+  // Actualizar tab del modal
+  const tabDot = document.getElementById('esp-tab-dot');
+  if(tabDot) tabDot.style.background = state==='on'?'var(--accent)':state==='err'?'var(--danger)':'var(--muted)';
+}
+
+function espToggle(){
+  const c = document.getElementById('espCard');
+  c.classList.toggle('open');
+  if(c.classList.contains('open')){
+    const saved = localStorage.getItem('pidac_esp_ip');
+    if(saved && !ESP.live) espConnect(saved, true); // reconectar silencioso
+  }
+}
+
+// ── Auto-detectar: primero Firebase, luego escaneo red
+async function espAutoDetect(){
+  const res = document.getElementById('espScanRes');
+  res.style.display='block';
+  res.innerHTML='🔍 Buscando en Firebase…';
+  espSetStatus('scan','Buscando…');
+
+  // 1. Intentar leer IP de Firebase (el ESP32 la escribe al arrancar)
+  if(db){
+    try{
+      const snap = await db.collection('devices').doc('esp32cam').get();
+      if(snap.exists){
+        const data = snap.data();
+        const ip   = data.ip;
+        const ts   = data.updatedAt ? new Date(data.updatedAt) : null;
+        const age  = ts ? (Date.now()-ts.getTime())/1000 : 999;
+        if(ip && age < 300){ // menos de 5 minutos
+          res.innerHTML = `✅ ESP32-CAM encontrada en Firebase: <strong>${ip}</strong> (hace ${Math.round(age)}s)`;
+          espConnect(ip);
+          return;
+        } else if(ip){
+          res.innerHTML = `⚠️ Última IP conocida: ${ip} (hace ${Math.round(age/60)}min) — verificando…`;
+          espConnect(ip);
+          return;
+        }
+      }
+    } catch(e){ console.warn('Firebase ESP32:', e.message); }
+  }
+
+  // 2. Escaneo de red local
+  res.innerHTML = '🔍 Escaneando red local…';
+  const saved = localStorage.getItem('pidac_esp_ip') || '';
+  let bases = ['10.131.184','10.0.0','192.168.1','192.168.0','192.168.100','172.20.10'];
+  if(saved){ const p=saved.split('.'); if(p.length===4) bases.unshift(p.slice(0,3).join('.')); }
+
+  const found = [];
+  outer: for(const base of bases){
+    for(let s=1;s<=254;s+=25){
+      const batch=[];
+      for(let i=s;i<s+25&&i<=254;i++){
+        const tip=base+'.'+i;
+        batch.push(
+          fetch('http://'+tip+'/status',{signal:AbortSignal.timeout(500)})
+            .then(r=>r.json()).then(d=>{ if(d.model) found.push({ip:tip,model:d.model}); })
+            .catch(()=>{})
+        );
+      }
+      await Promise.all(batch);
+      if(found.length) break outer;
+    }
+  }
+
+  if(!found.length){
+    res.innerHTML='❌ No encontrada. Verifica que el ESP32 esté encendido y en la misma red.';
+    espSetStatus('err','No encontrada');
+    return;
+  }
+  res.innerHTML = '✅ Encontrada:<br>'+found.map(f=>
+    `<span class="esp-found" onclick="espConnect('${f.ip}')">${f.ip} — ${f.model}</span>`
+  ).join('');
+}
+
+// ── Conectar al ESP32
+async function espConnect(ip, silent=false){
+  if(!ip) return;
+  ESP.ip = ip;
+  localStorage.setItem('pidac_esp_ip', ip);
+  espSetStatus('scan', 'Conectando a '+ip+'…');
+
+  // Verificar que responde
+  try{
+    const r = await fetch('http://'+ip+'/status', {signal:AbortSignal.timeout(3000)});
+    const d = await r.json();
+    espSetStatus('on', (d.model||'ESP32-CAM')+' · '+ip);
+    document.getElementById('espConnected').style.display='flex';
+    if(!silent) showToast('📷 ESP32-CAM conectada · '+ip);
+    // Actualizar stream en el modal si está abierto
+    if(ESP.source==='esp32') espActivateStream();
+  } catch(e){
+    // Intentar conectar de todos modos (algunos firmwares no tienen /status)
+    espSetStatus('on', ip+' (sin status)');
+    document.getElementById('espConnected').style.display='flex';
+    if(ESP.source==='esp32') espActivateStream();
+  }
+  ESP.live = true;
+}
+
+function espDisconnect(){
+  ESP.live=false; ESP.ip=null;
+  espSetStatus('','Sin cámara');
+  document.getElementById('espConnected').style.display='none';
+  if(ESP.source==='esp32') setCamSource('local');
+  localStorage.removeItem('pidac_esp_ip');
+  showToast('ESP32-CAM desconectada');
+}
+
+function espCtrl(v,val){
+  if(!ESP.ip) return;
+  fetch('http://'+ESP.ip+'/control?var='+v+'&val='+val).catch(()=>{});
+}
+
+// ── Activar stream ESP32 en el modal de escaneo
 function espActivateStream(){
   if(!ESP.ip) return;
-  const layer=document.getElementById('esp-stream-layer');
+  const layer = document.getElementById('esp-stream-layer');
   if(!layer) return;
-  const vid=document.getElementById('cam-feed');
-  if(vid){vid.style.display='none';vid.srcObject=null;}
-  const ph=document.getElementById('cam-ph');
+
+  // Esconder video local
+  const vid = document.getElementById('cam-feed');
+  if(vid){ vid.style.display='none'; vid.srcObject=null; }
+  const ph = document.getElementById('cam-ph');
   if(ph) ph.style.display='none';
+
+  // Mostrar capa
   layer.style.cssText='position:absolute;inset:0;z-index:10;display:block;background:#040a14';
   layer.classList.add('active');
-  layer.innerHTML='<img id="esp-stream-img" src="http://'+ESP.ip+'/stream?t='+Date.now()+'" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;position:absolute;inset:0" alt="ESP32-CAM"><div style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,.65);color:#00e5a0;font-size:10px;font-weight:700;border-radius:6px;padding:2px 8px;font-family:monospace;z-index:3;pointer-events:none">ESP32-CAM LIVE</div>';
-  window._espScanActive=true;
-  const img=document.getElementById('esp-stream-img');
+
+  // Usar iframe — funciona con mixed content mejor que img
+  const streamUrl = 'http://'+ESP.ip+'/stream';
+  layer.innerHTML =
+    '<iframe src="'+streamUrl+'" '+
+    'style="width:100%;height:100%;border:none;display:block;" '+
+    'id="esp-iframe"></iframe>'+
+    '<canvas id="esp-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2"></canvas>'+
+    '<div style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,.65);'+
+    'color:#00e5a0;font-size:10px;font-weight:700;border-radius:6px;'+
+    'padding:2px 8px;font-family:monospace;z-index:3">ESP32-CAM LIVE</div>';
+
+  // Para face-api, necesitamos capturar frames del iframe
+  // Usamos el img oculto para el reconocimiento facial
+  const img = document.getElementById('esp-stream-img');
   if(img){
-    img.onload=function(){
-      if(!window._espScanActive)return;
-      ESP.fc++;const now=performance.now();
-      if(!ESP.t0)ESP.t0=now;
+    img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;z-index:1';
+    img.onload = function(){
+      ESP.fc++;
+      const now=performance.now();
+      if(!ESP.t0) ESP.t0=now;
       if(now-ESP.t0>=1000){
-        const el=document.getElementById('espFpsLbl');
-        if(el)el.textContent=Math.round(ESP.fc*1000/(now-ESP.t0))+' fps';
-        ESP.fc=0;ESP.t0=now;
+        const fpsel=document.getElementById('espFpsLbl');
+        if(fpsel) fpsel.textContent=Math.round(ESP.fc*1000/(now-ESP.t0))+' fps';
+        ESP.fc=0; ESP.t0=now;
       }
     };
     img.onerror=function(){
-      if(window._espScanActive)
-        setTimeout(()=>{const i=document.getElementById('esp-stream-img');if(i)i.src='http://'+ESP.ip+'/stream?t='+Date.now();},2000);
+      if(ESP.source==='esp32') setTimeout(()=>{img.src='http://'+ESP.ip+'/stream?t='+Date.now();},3000);
     };
+    img.src='http://'+ESP.ip+'/stream?t='+Date.now();
   }
 }
 
 function espDeactivateStream(){
-  const layer=document.getElementById('esp-stream-layer');
-  if(layer){layer.classList.remove('active');layer.style.display='none';layer.innerHTML='';}
-  window._espScanActive=false;
-  const vid=document.getElementById('cam-feed');
-  if(vid)vid.style.display='block';
+  const layer = document.getElementById('esp-stream-layer');
+  const img   = document.getElementById('esp-stream-img');
+  if(layer){ layer.classList.remove('active'); layer.style.display='none'; }
+  if(img){ img.src=''; }
+  // Restaurar video local
+  const vid = document.getElementById('cam-feed');
+  if(vid) vid.style.display='block';
 }
 
+// ── Cambiar fuente de cámara (local ↔ ESP32)
 function setCamSource(source){
-  const tLocal=document.getElementById('tab-local');
-  const tEsp=document.getElementById('tab-esp32');
-  [tLocal,tEsp].forEach(t=>{if(t)t.style.cssText='flex:1;padding:7px;border:none;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);background:transparent;color:var(--muted)';});
-  const active='background:var(--accent);color:#07101F';
-  if(source==='local'&&tLocal)tLocal.style.cssText+=';'+active;
-  if(source==='esp32'&&tEsp)tEsp.style.cssText+=';'+active;
+  ESP.source = source;
+  document.getElementById('tab-local').className = 'esp-tab'+(source==='local'?' active':'');
+  document.getElementById('tab-esp32').className = 'esp-tab'+(source==='esp32'?' active':'');
+
   if(source==='esp32'){
-    if(!ESP.ip||!ESP.live){showToast('Conecta el ESP32-CAM primero','warn');setCamSource('local');return;}
-    if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
-    const v=document.getElementById('cam-feed');if(v){v.srcObject=null;v.style.display='none';}
+    if(!ESP.ip || !ESP.live){
+      showToast('Conecta el ESP32-CAM primero 📷','warn');
+      ESP.source='local';
+      document.getElementById('tab-local').className='esp-tab active';
+      document.getElementById('tab-esp32').className='esp-tab';
+      return;
+    }
+    // Pausar cámara local, activar ESP32
+    if(cameraStream){ cameraStream.getTracks().forEach(t=>t.stop()); cameraStream=null; }
+    const v = document.getElementById('cam-feed');
+    if(v) v.srcObject=null;
     espActivateStream();
+    // El reconocimiento facial ahora usa el <img> del stream
+    window._espScanActive = true;
+    showToast('Usando ESP32-CAM para reconocimiento 📡');
   } else {
+    // Volver a cámara local
     espDeactivateStream();
-    if(scanActive)startScan();
+    window._espScanActive = false;
+    if(scanActive) startScan(); // reiniciar cámara local
   }
 }
+
+// ── Registrar IP en Firebase (llamar después de conectar)
+async function espRegisterInFirebase(ip, model){
+  if(!db) return;
+  try{
+    await fbSet('devices','esp32cam',{
+      ip, model: model||'ESP32-CAM',
+      updatedAt: new Date().toISOString()
+    });
+  } catch(e){}
+}
+
+// ── Auto-restaurar al iniciar
+document.addEventListener('DOMContentLoaded',()=>{
+  const saved = localStorage.getItem('pidac_esp_ip');
+  if(saved){
+    espSetStatus('','Última: '+saved);
+    const inp = document.getElementById('espManualIp');
+    if(inp) inp.value = saved;
+    setTimeout(()=> espConnect(saved, true), 2000);
+  }
+});
+// ══ FIN ESP32-CAM ════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════
+//  SISTEMA DE EXCUSAS
+// ════════════════════════════════════════════════════════════
+let excuses = []; // cache local
+
+// ── Escuchar excusas en tiempo real desde Firebase
+let _excusesListenerSet=false;
+function setupExcusesListener(){
+  if(!db||_excusesListenerSet) return;
+  _excusesListenerSet=true;
+  fbListeners.push(db.collection('excuses').onSnapshot(snap=>{
+    snap.docChanges().forEach(change=>{
+      if(change.type==='added'||change.type==='modified'){
+        const d = {id:change.doc.id, ...change.doc.data()};
+        const idx = excuses.findIndex(e=>e.id===d.id);
+        if(idx>-1) excuses[idx]=d; else excuses.push(d);
+      } else if(change.type==='removed'){
+        excuses = excuses.filter(e=>e.id!==change.doc.id);
+      }
+    });
+    renderExcuses();
+    updateExcusesBadge();
+  }));
+}
+
+// ── Badge de excusas pendientes en el nav
+function updateExcusesBadge(){
+  const badge = document.getElementById('excuses-badge');
+  if(!badge) return;
+  let pending;
+  if(currentUser?.role==='teacher'){
+    pending = excuses.filter(e=>e.teacherId===currentUser.id && e.status==='pending').length;
+  } else {
+    pending = excuses.filter(e=>e.status==='pending').length;
+  }
+  badge.textContent = pending;
+  badge.style.display = pending>0 ? 'inline-block' : 'none';
+}
+
+// ── Render lista de excusas
+function renderExcuses(){
+  const list = document.getElementById('excuses-list');
+  if(!list) return;
+
+  const filterId = document.getElementById('excuse-filter')?.value ||
+                   document.getElementById('excuse-filter-t')?.value || 'all';
+
+  let filtered = [...excuses];
+
+  // Profesor solo ve sus excusas
+  if(currentUser?.role==='teacher'){
+    filtered = filtered.filter(e=>e.teacherId===currentUser.id);
+  }
+  // Coordinador ve todas
+  if(filterId!=='all'){
+    filtered = filtered.filter(e=>e.status===filterId);
+  }
+  // Ordenar: pendientes primero, luego por fecha
+  filtered.sort((a,b)=>{
+    if(a.status==='pending'&&b.status!=='pending') return -1;
+    if(b.status==='pending'&&a.status!=='pending') return 1;
+    return (b.createdAt||'').localeCompare(a.createdAt||'');
+  });
+
+  if(!filtered.length){
+    list.innerHTML=`<div style="text-align:center;color:var(--muted);padding:3rem;font-size:13px">
+      ${filterId==='pending'?'No hay excusas pendientes':'Sin excusas registradas'}
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(e=>{
+    const student = students.find(s=>s.id===e.studentId);
+    const teacher = accounts.find(a=>a.id===e.teacherId);
+    const statusLabel = {pending:'Pendiente',approved:'Aprobada',rejected:'Rechazada'}[e.status]||e.status;
+    const isPending = e.status==='pending';
+
+    const docHTML = e.docType==='pdf'
+      ? `<div class="excuse-card-doc" onclick="window.open('${e.docUrl}','_blank')" title="Ver PDF">
+           <div class="pdf-icon">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+             <span style="font-size:11px">${e.docName||'documento.pdf'}</span>
+           </div>
+         </div>`
+      : e.docUrl
+        ? `<div class="excuse-card-doc" onclick="window.open('${e.docUrl}','_blank')">
+             <img src="${e.docUrl}" alt="Documento excusa" loading="lazy">
+           </div>`
+        : '';
+
+    const actions = isPending && currentUser?.role==='teacher'
+      ? `<div class="excuse-card-actions">
+           <button class="excuse-approve-btn" onclick="resolveExcuse('${e.id}','approved')">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+             Aprobar
+           </button>
+           <button class="excuse-reject-btn" onclick="resolveExcuse('${e.id}','rejected')">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+             Rechazar
+           </button>
+         </div>`
+      : '';
+
+    return `<div class="excuse-card">
+      <div class="excuse-card-hdr">
+        <div class="excuse-card-student">
+          <span>${student?.name||'Estudiante desconocido'}</span>
+        </div>
+        <span class="excuse-status-badge ${e.status}">${statusLabel}</span>
+      </div>
+      <div class="excuse-card-meta">
+        📅 ${e.date||'Sin fecha'} &nbsp;·&nbsp;
+        👨‍🏫 Para: ${teacher?.name||'Profesor'} &nbsp;·&nbsp;
+        📝 ${e.reason||'Sin motivo'}
+      </div>
+      ${docHTML}
+      ${actions}
+    </div>`;
+  }).join('');
+}
+
+// ── Aprobar o rechazar excusa
+async function resolveExcuse(excuseId, resolution){
+  if(!db) return;
+  const excuse = excuses.find(e=>e.id===excuseId);
+  if(!excuse) return;
+
+  await db.collection('excuses').doc(excuseId).update({
+    status: resolution,
+    resolvedAt: new Date().toISOString(),
+    resolvedBy: currentUser?.name||'Profesor'
+  });
+
+  // Si aprueba → cambiar asistencia a 'excused' en el día correspondiente
+  if(resolution==='approved'){
+    const student = students.find(s=>s.id===excuse.studentId);
+    if(student){
+      student.status = 'excused';
+      // Guardar en Firebase attendance para esa fecha
+      if(excuse.date){
+        const attDoc = await db.collection('attendance').doc('att-'+excuse.date).get();
+        if(attDoc.exists){
+          const data = attDoc.data();
+          const records = (data.records||[]).map(r=>{
+            if(r.studentId===excuse.studentId) return {...r, status:'excused'};
+            return r;
+          });
+          await db.collection('attendance').doc('att-'+excuse.date).update({records});
+        }
+      }
+      renderTable(); updateStats();
+    }
+    showToast('✓ Excusa aprobada — asistencia marcada como Excusado');
+  } else {
+    showToast('Excusa rechazada');
+  }
+  updateExcusesBadge();
+}
+
+// ── Abrir modal de nueva excusa
+function openExcuseModal(){
+  // Poblar select de estudiantes
+  const stuSel = document.getElementById('excuse-student');
+  if(stuSel){
+    stuSel.innerHTML = '<option value="">Seleccionar estudiante…</option>' +
+      [...students].sort((a,b)=>a.name.localeCompare(b.name))
+        .map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  }
+  // Poblar select de profesores
+  const tchSel = document.getElementById('excuse-teacher');
+  if(tchSel){
+    const teachers = accounts.filter(a=>a.role==='teacher');
+    tchSel.innerHTML = '<option value="">Seleccionar profesor…</option>' +
+      teachers.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  }
+  // Fecha por defecto: hoy
+  const dateInp = document.getElementById('excuse-date');
+  if(dateInp) dateInp.value = new Date().toISOString().split('T')[0];
+  // Limpiar previews
+  document.getElementById('excuse-doc-img').style.display='none';
+  document.getElementById('excuse-doc-pdf').style.display='none';
+  document.getElementById('excuse-doc-placeholder').style.display='flex';
+  document.getElementById('excuse-err')?.classList.add('hidden');
+  window._excuseDocData = null;
+  window._excuseDocType = null;
+  window._excuseDocName = null;
+  document.getElementById('excuse-modal').classList.remove('hidden');
+}
+
+function closeExcuseModal(){
+  document.getElementById('excuse-modal').classList.add('hidden');
+}
+
+function onExcuseStudentChange(){
+  // Auto-seleccionar el profesor del grado del estudiante
+  const stuId = document.getElementById('excuse-student').value;
+  const stu   = students.find(s=>s.id===stuId);
+  if(!stu) return;
+  const teacher = accounts.find(a=>a.role==='teacher'&&a.gradeId===stu.gradeId);
+  if(teacher){
+    const tchSel = document.getElementById('excuse-teacher');
+    if(tchSel) tchSel.value = teacher.id;
+  }
+}
+
+// Usar cámara del celular
+function triggerExcuseCamera(){
+  document.getElementById('excuse-camera-input').click();
+}
+
+// Archivo seleccionado (foto o PDF)
+function onExcuseFileSelected(input){
+  const file = input.files?.[0];
+  if(!file) return;
+  window._excuseDocName = file.name;
+
+  const reader = new FileReader();
+  reader.onload = e=>{
+    const data = e.target.result;
+    window._excuseDocData = data;
+
+    if(file.type==='application/pdf'){
+      window._excuseDocType = 'pdf';
+      document.getElementById('excuse-doc-placeholder').style.display='none';
+      document.getElementById('excuse-doc-img').style.display='none';
+      document.getElementById('excuse-doc-pdf').style.display='flex';
+      document.getElementById('excuse-pdf-name').textContent=file.name;
+    } else {
+      window._excuseDocType = 'image';
+      document.getElementById('excuse-doc-placeholder').style.display='none';
+      document.getElementById('excuse-doc-pdf').style.display='none';
+      const img = document.getElementById('excuse-doc-img');
+      img.src = data;
+      img.style.display='block';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// Enviar excusa
+async function submitExcuse(){
+  const stuId    = document.getElementById('excuse-student').value;
+  const tchId    = document.getElementById('excuse-teacher').value;
+  const date     = document.getElementById('excuse-date').value;
+  const reason   = document.getElementById('excuse-reason').value.trim();
+  const errEl    = document.getElementById('excuse-err');
+
+  if(!stuId||!tchId||!date||!reason){
+    errEl.textContent='Completa todos los campos';
+    errEl.classList.remove('hidden'); return;
+  }
+  errEl.classList.add('hidden');
+
+  const excuse = {
+    studentId:  stuId,
+    teacherId:  tchId,
+    date,
+    reason,
+    status:     'pending',
+    createdAt:  new Date().toISOString(),
+    createdBy:  currentUser?.name||'Coordinador',
+    docUrl:     window._excuseDocData||null,
+    docType:    window._excuseDocType||null,
+    docName:    window._excuseDocName||null,
+  };
+
+  await fbSet('excuses', 'exc-'+Date.now(), excuse);
+  closeExcuseModal();
+  showToast('✓ Excusa enviada al profesor');
+  // Ir a la vista de excusas
+  showView('excuses', document.getElementById('nav-excuses'));
+}
+
+// ── Aplicar rol extendido (coordinador)
+const _origApplyRole = typeof applyRole === 'function' ? applyRole : null;
+
+
 </script>
-<!-- ══ FIN PWA ════════════════════════════════════════════════ -->
+<script>
+// ════════════════════════════════════════════════════════════
+//  SISTEMA DE ROLES — Admin / Profesor
+// ════════════════════════════════════════════════════════════
+
+function applyRole(role){
+  const body = document.body;
+  body.classList.remove('role-admin','role-teacher','role-coordinator');
+  body.classList.add('role-'+role);
+
+  // Badge de rol
+  const badge = document.getElementById('sb-role-badge');
+  if(badge){
+    const labels = {admin:'Admin', teacher:'Profesor', coordinator:'Coordinador'};
+    badge.textContent = labels[role]||role;
+    badge.className = 'role-badge '+(role==='admin'?'admin':'teacher');
+  }
+
+  // Refs nav
+  const navTeacher  = document.getElementById('nav-teacher');
+  const navExcuses  = document.getElementById('nav-excuses');
+  const navAccounts = document.getElementById('nav-accounts');
+  const navDb       = document.getElementById('nav-database');
+
+  // Ocultar todo primero
+  [navTeacher,navExcuses,navAccounts,navDb].forEach(el=>{ if(el) el.style.display='none'; });
+
+  if(role==='teacher'){
+    if(navTeacher) navTeacher.style.display='flex';
+    if(navExcuses) navExcuses.style.display='flex';
+    showView('teacher', navTeacher);
+    initTeacherView();
+  } else if(role==='coordinator'){
+    if(navExcuses) navExcuses.style.display='flex';
+    if(navDb)      navDb.style.display='flex';
+    showView('excuses', navExcuses);
+  } else {
+    // Admin — acceso total
+    if(navAccounts) navAccounts.style.display='flex';
+    if(navDb)       navDb.style.display='flex';
+    if(navExcuses)  navExcuses.style.display='flex';
+    showView('dashboard', document.getElementById('nav-dashboard'));
+  }
+
+  // Listener de excusas para todos
+  if(typeof setupExcusesListener==='function') setupExcusesListener();
+}
+
+// ── Vista del profesor
+function initTeacherView(){
+  const today = new Date().toISOString().split('T')[0];
+  const dateInp = document.getElementById('teacher-date');
+  if(dateInp && !dateInp.value) dateInp.value = today;
+  updateTeacherStats();
+  renderTeacherTable('');
+}
+
+function getTeacherStudents(){
+  // El profesor solo ve los estudiantes de su grado asignado
+  if(!currentUser || currentUser.role!=='teacher') return students;
+  const gradeId = currentUser.gradeId;
+  if(!gradeId) return students;
+  return students.filter(s=> s.gradeId === gradeId);
+}
+
+function updateTeacherStats(){
+  const myStudents = getTeacherStudents();
+  const total   = myStudents.length;
+  const present = myStudents.filter(s=>s.status==='present').length;
+  const absent  = total - present;
+  const pct     = total>0 ? Math.round(present/total*100) : 0;
+
+  const grade = grades.find(g=>g.id===currentUser?.gradeId);
+  const gradeName = grade ? grade.name : 'Todos los grados';
+
+  setEl('ts-present', present);
+  setEl('ts-absent',  absent);
+  setEl('ts-total',   total);
+  setEl('ts-rate',    pct+'%');
+  setEl('ts-present-pct', pct+'% asistencia');
+  setEl('ts-absent-pct',  Math.round(absent/Math.max(total,1)*100)+'% ausencia');
+  setEl('ts-grade-name',  gradeName);
+}
+
+function renderTeacherTable(filter=''){
+  const tbody = document.getElementById('teacher-att-table');
+  if(!tbody) return;
+  const myStudents = getTeacherStudents();
+  const filtered = filter
+    ? myStudents.filter(s=>s.name.toLowerCase().includes(filter.toLowerCase()))
+    : myStudents;
+
+  if(!filtered.length){
+    tbody.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;font-size:13px">Sin estudiantes en tu grado</div>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(s=>{
+    const isPres = s.status==='present';
+    const isExcused = s.status==='excused';
+    const face   = (faces||{})[s.id];
+    const av     = face
+      ? `<img src="${face.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${s.color}22;color:${s.color};font-size:11px;font-weight:700;border-radius:50%">${s.initials}</div>`;
+    return `<div class="att-row" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:8px">
+      <div style="width:34px;height:34px;flex-shrink:0">${av}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+        <div style="font-size:11px;color:var(--muted)">${grades.find(g=>g.id===s.gradeId)?.name||'Sin grado'}</div>
+      </div>
+      <div style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;
+        background:${isPres?'rgba(0,229,160,.12)':'rgba(255,61,90,.1)'};
+        color:${isPres?'var(--accent)':'var(--danger)'};
+        border:1px solid ${isPres?'rgba(0,229,160,.3)':'rgba(255,61,90,.25)'}">
+        ${isPres?'✓ Presente':'Ausente'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function loadTeacherAttendance(dateKey){
+  if(!db||!dateKey) return;
+  try{
+    const snap = await db.collection('attendance').doc('att-'+dateKey).get();
+    if(snap.exists){
+      const data = snap.data();
+      (data.records||[]).forEach(r=>{
+        const s=students.find(x=>x.id===r.studentId);
+        if(s) s.status=r.status;
+      });
+      updateTeacherStats();
+      renderTeacherTable(document.getElementById('teacher-search')?.value||'');
+      const lbl=document.getElementById('teacher-saved-lbl');
+      if(lbl) lbl.textContent='Cargado: '+dateKey;
+    }
+  }catch(e){}
+}
+
+function setEl(id, val){ const el=document.getElementById(id); if(el) el.textContent=val; }
+
+// ── Render de cuentas mejorado
+
+function renderCard(acc){
+  const grade = grades.find(g=>g.id===acc.gradeId);
+  const roleColors={teacher:'#00B8FF',coordinator:'#f59e0b',student:'#a855f7'};
+  const roleLabels={teacher:'Profesor',coordinator:'Coordinador',student:'Estudiante'};
+  const color=roleColors[acc.role]||'#00B8FF';
+  const initials=(acc.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  return `<div class="acc-card">
+    <div class="acc-card-av" style="background:${color}18;color:${color}">${initials}</div>
+    <div class="acc-card-info">
+      <div class="acc-card-name">${acc.name||'Sin nombre'}</div>
+      <div class="acc-card-meta">@${acc.username||''}${grade?' · '+grade.name:''}</div>
+    </div>
+    <div style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:${color}18;color:${color};border:1px solid ${color}33;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap">${roleLabels[acc.role]||acc.role}</div>
+    <div style="display:flex;gap:5px">
+      <button class="acc-act-btn" onclick="openAccountModal(null,'${acc.id}')" title="Editar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      <button class="acc-act-btn del" onclick="deleteAccount('${acc.id}')" title="Eliminar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+      </button>
+    </div>
+  </div>`;
+}
+
+function renderAccounts(){
+  const coordinators = accounts.filter(a=>a.role==='coordinator');
+  const teachers     = accounts.filter(a=>a.role==='teacher');
+  const stuAccs      = accounts.filter(a=>a.role==='student');
+
+  const cList  = document.getElementById('coordinator-list');
+  const tList  = document.getElementById('teacher-list');
+  const sList  = document.getElementById('student-acc-list');
+  const cCount = document.getElementById('coordinator-count');
+  const tCount = document.getElementById('teacher-count');
+  const sCount = document.getElementById('student-acc-count');
+
+  if(cCount) cCount.textContent = coordinators.length+' cuenta'+(coordinators.length!==1?'s':'');
+  if(tCount) tCount.textContent = teachers.length+' cuenta'+(teachers.length!==1?'s':'');
+  if(sCount) sCount.textContent = stuAccs.length+' cuenta'+(stuAccs.length!==1?'s':'');
+
+  if(cList) cList.innerHTML = coordinators.length
+    ? coordinators.map(renderCard).join('')
+    : '<div style="color:var(--muted);font-size:12px;padding:12px">Sin coordinadores registrados</div>';
+
+  const renderCard = (acc)=>{
+    const grade = grades.find(g=>g.id===acc.gradeId);
+    const color = acc.role==='teacher'?'#00B8FF':'#a855f7';
+    const initials = acc.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    return `<div class="acc-card">
+      <div class="acc-card-av" style="background:${color}18;color:${color}">${initials}</div>
+      <div class="acc-card-info">
+        <div class="acc-card-name">${acc.name}</div>
+        <div class="acc-card-meta">
+          @${acc.username}
+          ${grade?' · '+grade.name:''}
+        </div>
+      </div>
+      <div class="acc-card-role ${acc.role}">${acc.role==='teacher'?'Profesor':'Estudiante'}</div>
+      <div class="acc-card-actions">
+        <button class="acc-act-btn" onclick="openAccountModal(null,'${acc.id}')" title="Editar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="acc-act-btn del" onclick="deleteAccount('${acc.id}')" title="Eliminar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+        </button>
+      </div>
+    </div>`;
+  };
+
+  if(tList) tList.innerHTML = teachers.length
+    ? teachers.map(renderCard).join('')
+    : '<div style="color:var(--muted);font-size:12px;padding:12px">Sin profesores registrados</div>';
+
+  if(sList) sList.innerHTML = stuAccs.length
+    ? stuAccs.map(renderCard).join('')
+    : '<div style="color:var(--muted);font-size:12px;padding:12px">Sin estudiantes con acceso</div>';
+}
+
+async function deleteAccount(id){
+  if(!confirm('¿Eliminar esta cuenta?')) return;
+  accounts = accounts.filter(a=>a.id!==id);
+  await fbDel('accounts', id);
+  renderAccounts();
+  showToast('Cuenta eliminada');
+}
+
+// ════════════════════════════════════════════════════════════
+//  MEJORA BASE DE DATOS — sección de rostros
+// ════════════════════════════════════════════════════════════
+
+
+function openFaceModalForStudent(studentId){
+  // Abrir el modal de cara preseleccionando el estudiante
+  selectedStudentForFace = studentId;
+  openFaceModal(studentId);
+}
+
+
+// ════════════════════════════════════════════════════════════
+//  PERSISTENCIA DE SESIÓN
+// ════════════════════════════════════════════════════════════
+function saveSession(user){
+  try{
+    localStorage.setItem('pidac_session', JSON.stringify({
+      ...user,
+      savedAt: Date.now()
+    }));
+  } catch(e){}
+}
+
+function clearSession(){
+  localStorage.removeItem('pidac_session');
+}
+
+function restoreSession(){
+  try{
+    const raw = localStorage.getItem('pidac_session');
+    if(!raw) return false;
+    const data = JSON.parse(raw);
+    // Sesión válida por 12 horas
+    if(Date.now() - data.savedAt > 12 * 60 * 60 * 1000){
+      clearSession(); return false;
+    }
+    currentUser = data;
+    return true;
+  } catch(e){ return false; }
+}
+
+// Cerrar sesión
+function logout(){
+  clearSession();
+  currentUser = null;
+  document.getElementById('app-shell').classList.add('hidden');
+  document.getElementById('login-screen').classList.remove('hidden');
+  // Limpiar listeners Firebase
+  fbListeners.forEach(u=>{ try{ u(); }catch(e){} });
+  fbListeners = [];
+  showToast('Sesión cerrada');
+}
+
+
+// ════════════════════════════════════════════════════════════
+//  FLASH DE PANTALLA BLANCA — ilumina la cara al capturar
+// ════════════════════════════════════════════════════════════
+function screenFlash(duration=250){
+  return new Promise(res=>{
+    const el=document.getElementById('screen-flash');
+    if(!el){res();return;}
+    el.classList.remove('flash-off');
+    el.classList.add('flash-on');
+    setTimeout(()=>{
+      el.classList.remove('flash-on');
+      el.classList.add('flash-off');
+      setTimeout(res, 400); // esperar fade out
+    }, duration);
+  });
+}
+
+</script>
+
+<!-- ══ MODAL EXCUSA ══════════════════════════════════════════ -->
+<div id="excuse-modal" class="modal-overlay hidden">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;color:var(--accent)"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Nueva excusa de inasistencia
+      </h3>
+      <button class="modal-close" onclick="closeExcuseModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Estudiante -->
+    <label class="field-label">Estudiante</label>
+    <select id="excuse-student" onchange="onExcuseStudentChange()" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;margin-bottom:10px">
+      <option value="">Seleccionar estudiante…</option>
+    </select>
+
+    <!-- Profesor destinatario -->
+    <label class="field-label">Enviar a profesor</label>
+    <select id="excuse-teacher" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;margin-bottom:10px">
+      <option value="">Seleccionar profesor…</option>
+    </select>
+
+    <!-- Fecha de inasistencia -->
+    <label class="field-label">Fecha de inasistencia</label>
+    <input type="date" id="excuse-date" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;margin-bottom:10px;box-sizing:border-box">
+
+    <!-- Motivo -->
+    <label class="field-label">Motivo</label>
+    <textarea id="excuse-reason" placeholder="Describe el motivo de la inasistencia…" rows="3"
+      style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;resize:none;box-sizing:border-box;margin-bottom:10px"></textarea>
+
+    <!-- Documento -->
+    <label class="field-label">Documento de soporte (foto o PDF)</label>
+    <div class="excuse-doc-preview" id="excuse-doc-preview" onclick="document.getElementById('excuse-file-input').click()">
+      <div class="placeholder" id="excuse-doc-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Toca para adjuntar foto o PDF
+      </div>
+      <img id="excuse-doc-img" style="display:none;width:100%;height:100%;object-fit:contain" alt="Documento">
+      <div id="excuse-doc-pdf" style="display:none;flex-direction:column;align-items:center;gap:6px;color:var(--accent)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;height:40px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span id="excuse-pdf-name" style="font-size:11px"></span>
+      </div>
+    </div>
+    <div class="excuse-upload-btns">
+      <button class="excuse-upload-btn" onclick="triggerExcuseCamera()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Usar cámara
+      </button>
+      <button class="excuse-upload-btn" onclick="document.getElementById('excuse-file-input').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Subir archivo
+      </button>
+    </div>
+    <input type="file" id="excuse-file-input" accept="image/*,application/pdf" style="display:none" onchange="onExcuseFileSelected(this)">
+    <input type="file" id="excuse-camera-input" accept="image/*" capture="environment" style="display:none" onchange="onExcuseFileSelected(this)">
+
+    <div class="modal-error hidden" id="excuse-err"></div>
+
+    <div class="modal-actions" style="margin-top:1rem">
+      <button class="btn-modal btn-modal-green" onclick="submitExcuse()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Enviar excusa
+      </button>
+      <button class="btn-modal-cancel" onclick="closeExcuseModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+<!-- ══ FIN MODAL EXCUSA ════════════════════════════════════════ --
+
+<!-- ══ ESP32-CAM PANEL ════════════════════════════════════════ -->
+<div class="esp-panel" id="espPanel">
+  <div class="esp-card-hdr">
+    <div class="esp-card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      ESP32-CAM
+    </div>
+    <button class="esp-close" onclick="document.getElementById('espPanel').classList.remove('open')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="esp-status-row">
+    <span class="esp-s-dot" id="espDot"></span>
+    <span class="esp-s-txt" id="espTxt">Sin cámara</span>
+    <span class="esp-s-fps" id="espFpsLbl"></span>
+  </div>
+  <div style="display:flex;gap:7px">
+    <input type="text" id="espManualIp" placeholder="10.131.x.x"
+      style="flex:1;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none"
+      onkeydown="if(event.key==='Enter')espConnect(document.getElementById('espManualIp').value)">
+    <button class="esp-btn esp-btn-g" style="width:auto;padding:9px 14px" onclick="espConnect(document.getElementById('espManualIp').value)">Conectar</button>
+  </div>
+  <button class="esp-btn esp-btn-g" id="espAutoBtn" onclick="espAutoDetect()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    Detectar automáticamente
+  </button>
+  <div class="esp-scan-res" id="espScanRes"></div>
+  <div id="espConnected" style="display:none;flex-direction:column;gap:8px">
+    <div class="esp-controls">
+      <select onchange="espCtrl('framesize',this.value)">
+        <option value="5">QVGA 320×240</option>
+        <option value="8" selected>VGA 640×480</option>
+        <option value="9">SVGA 800×600</option>
+      </select>
+      <select onchange="espCtrl('quality',this.value)">
+        <option value="8" selected>Alta calidad</option>
+        <option value="15">Media</option>
+        <option value="25">Baja</option>
+      </select>
+    </div>
+    <button class="esp-btn esp-btn-r" onclick="espDisconnect()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+      Desconectar
+    </button>
+  </div>
+</div>
+<button class="esp-fab" id="espFab" onclick="document.getElementById('espPanel').classList.toggle('open');const s=localStorage.getItem('pidac_esp_ip');if(s)document.getElementById('espManualIp').value=s;" title="ESP32-CAM">
+  📷<span class="esp-fab-status" id="espFabStatus"></span>
+</button>
+<!-- ══ FIN ESP32 PANEL ══════════════════════════════════════════ -->
 
 </body>
 </html>
