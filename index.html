@@ -723,6 +723,8 @@ body.role-coordinator .coord-only { display:flex !important; }
 .coord-only { display:none !important; }
 /* ══ FIN EXCUSAS ══════════════════════════════════════════════ */
 
+.rc-coordinator:hover,.rc-coordinator.sel{border-color:#f59e0b;background:rgba(245,158,11,.08);}
+.rc-coordinator:hover span,.rc-coordinator.sel span{color:#f59e0b;}
 </style>
 </head>
 <body onload="onBodyLoad()">
@@ -746,7 +748,7 @@ body.role-coordinator .coord-only { display:flex !important; }
     </div>
     <div class="login-title">PIDAC</div>
     <div class="login-sub">Sistema de Asistencia Escolar</div>
-    <div class="role-selector">
+    <div class="role-selector" style="grid-template-columns:repeat(2,1fr)">
       <div class="role-card rc-admin sel" id="rc-admin" onclick="selectRole('admin')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         <span>Admin</span><small>Control total</small>
@@ -754,6 +756,10 @@ body.role-coordinator .coord-only { display:flex !important; }
       <div class="role-card rc-teacher" id="rc-teacher" onclick="selectRole('teacher')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
         <span>Profesor</span><small>Asistencia</small>
+      </div>
+      <div class="role-card rc-coordinator" id="rc-coordinator" onclick="selectRole('coordinator')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Coordinador</span><small>Excusas</small>
       </div>
       <div class="role-card rc-student" id="rc-student" onclick="selectRole('student')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
@@ -1030,10 +1036,24 @@ body.role-coordinator .coord-only { display:flex !important; }
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
           Nuevo Profesor
         </button>
+        <button class="btn-primary" style="background:linear-gradient(135deg,#f59e0b,#d97706)" onclick="openAccountModal('coordinator')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Nuevo Coordinador
+        </button>
       </div>
 
-      <!-- Sección profesores -->
+      <!-- Sección coordinadores -->
       <div class="db-section-hdr" style="margin-top:.5rem">
+        <div class="db-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#f59e0b"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Coordinadores
+        </div>
+        <span id="coordinator-count" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div id="coordinator-list"></div>
+
+      <!-- Sección profesores -->
+      <div class="db-section-hdr" style="margin-top:1rem">
         <div class="db-section-title">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
           Profesores
@@ -4239,16 +4259,24 @@ function setEl(id, val){ const el=document.getElementById(id); if(el) el.textCon
 
 // ── Render de cuentas mejorado
 function renderAccounts(){
-  const teachers = accounts.filter(a=>a.role==='teacher');
-  const stuAccs  = accounts.filter(a=>a.role==='student');
+  const coordinators = accounts.filter(a=>a.role==='coordinator');
+  const teachers     = accounts.filter(a=>a.role==='teacher');
+  const stuAccs      = accounts.filter(a=>a.role==='student');
 
-  const tList = document.getElementById('teacher-list');
-  const sList = document.getElementById('student-acc-list');
-  const tCount= document.getElementById('teacher-count');
-  const sCount= document.getElementById('student-acc-count');
+  const cList  = document.getElementById('coordinator-list');
+  const tList  = document.getElementById('teacher-list');
+  const sList  = document.getElementById('student-acc-list');
+  const cCount = document.getElementById('coordinator-count');
+  const tCount = document.getElementById('teacher-count');
+  const sCount = document.getElementById('student-acc-count');
 
+  if(cCount) cCount.textContent = coordinators.length+' cuenta'+(coordinators.length!==1?'s':'');
   if(tCount) tCount.textContent = teachers.length+' cuenta'+(teachers.length!==1?'s':'');
   if(sCount) sCount.textContent = stuAccs.length+' cuenta'+(stuAccs.length!==1?'s':'');
+
+  if(cList) cList.innerHTML = coordinators.length
+    ? coordinators.map(renderCard).join('')
+    : '<div style="color:var(--muted);font-size:12px;padding:12px">Sin coordinadores registrados</div>';
 
   const renderCard = (acc)=>{
     const grade = grades.find(g=>g.id===acc.gradeId);
