@@ -4137,10 +4137,7 @@ function applyRole(role){
 }
 
 </script>
-<!-- ══ FIN ESP32-CAM PANEL ═══════════════════════════════════ -->
-
-
-</html
+<script>
 // ════════════════════════════════════════════════════════════
 //  SISTEMA DE ROLES — Admin / Profesor
 // ════════════════════════════════════════════════════════════
@@ -4328,55 +4325,7 @@ async function deleteAccount(id){
 // ════════════════════════════════════════════════════════════
 //  MEJORA BASE DE DATOS — sección de rostros
 // ════════════════════════════════════════════════════════════
-function renderDbGrid(){
-  const grid = document.getElementById('db-grid');
-  if(!grid) return;
-  const gradeF = document.getElementById('db-grade-filter')?.value||'all';
-  const searchF= document.getElementById('db-search')?.value?.toLowerCase()||'';
 
-  let list = students;
-  if(gradeF!=='all') list=list.filter(s=>s.gradeId===gradeF);
-  if(searchF) list=list.filter(s=>s.name.toLowerCase().includes(searchF));
-
-  if(!list.length){
-    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:2rem">Sin estudiantes</div>';
-    return;
-  }
-
-  grid.innerHTML = list.map(s=>{
-    const face    = (faces||{})[s.id];
-    const hasFace = !!face;
-    const grade   = grades.find(g=>g.id===s.gradeId);
-    return `<div class="db-card" style="border-color:${hasFace?'rgba(0,229,160,.3)':'var(--border)'}">
-      <div class="db-card-photo" onclick="openEditStudentModal('${s.id}')">
-        ${hasFace
-          ?`<img src="${face.photo}" alt="${s.name}" style="width:100%;height:100%;object-fit:cover">`
-          :`<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:28px;height:28px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <span style="font-size:9px">Sin foto</span>
-            </div>`
-        }
-        ${hasFace?'<div style="position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 4px var(--accent)"></div>':''}
-      </div>
-      <div class="db-card-info">
-        <div class="db-card-name">${s.name}</div>
-        <div class="db-card-grade">${grade?.name||'Sin grado'}</div>
-      </div>
-      <div class="db-card-actions">
-        <button class="db-act-btn" onclick="openFaceModalForStudent('${s.id}')" title="${hasFace?'Actualizar rostro':'Registrar rostro'}"
-          style="color:${hasFace?'var(--accent)':'var(--muted)'}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M3 21a9 9 0 1118 0"/></svg>
-        </button>
-        <button class="db-act-btn" onclick="openEditStudentModal('${s.id}')" title="Editar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        </button>
-        <button class="db-act-btn" onclick="deleteStudent('${s.id}')" title="Eliminar" style="color:var(--danger)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
-        </button>
-      </div>
-    </div>`;
-  }).join('');
-}
 
 function openFaceModalForStudent(studentId){
   // Abrir el modal de cara preseleccionando el estudiante
@@ -4384,7 +4333,8 @@ function openFaceModalForStudent(studentId){
   openFaceModal(studentId);
 }
 
->
+</script>
+
 <!-- ══ MODAL EXCUSA ══════════════════════════════════════════ -->
 <div id="excuse-modal" class="modal-overlay hidden">
   <div class="modal" style="max-width:480px">
@@ -4456,7 +4406,6 @@ function openFaceModalForStudent(studentId){
     </div>
   </div>
 </div>
-<!-- ══ FIN MODAL EXCUSA ════════════════════════════════════════ -->
-
+<!-- ══ FIN MODAL EXCUSA ════════════════════════════════════════ --
 </body>
 </html>
