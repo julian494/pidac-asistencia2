@@ -429,7 +429,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 /* En móvil usar proporción más cuadrada para ver la cara completa */
 @media(max-width:768px){
   .cam-box{ aspect-ratio:3/4; }
-  .cam-box.scan-box{ aspect-ratio:1/1; }
+  .cam-box.scan-box{ aspect-ratio:4/3; }  /* fix: era 1/1, causaba zoom 0.6x */
 }
 .cam-box video{
   position:absolute;inset:0;
@@ -2959,8 +2959,8 @@ async function startScan(){
   const st     = document.getElementById('cam-st');
   const ph     = document.getElementById('cam-ph');
 
-  // ── Si ESP32 está seleccionado, usar su stream directamente
-  if(ESP.source === 'esp32' && ESP.ip && ESP.live){
+  // ── Si ESP32 está seleccionado (tab activo), usar su stream
+  if(window._espScanActive && ESP.ip && ESP.live){
     if(ph) ph.style.display='none';
     // Activar capa del stream ESP32
     espActivateStream();
@@ -3086,7 +3086,8 @@ async function runFaceLoop(){
   const overlay = document.getElementById('face-overlay');
   if(!video||!scanActive) return;
   const ctx = overlay.getContext('2d');
-  overlay.style.transform='scaleX(-1)';
+  // Espejo: cámara local sí, ESP32 no (ya viene sin espejo del servidor)
+  overlay.style.transform = window._espScanActive ? '' : 'scaleX(-1)';
 
   // OffscreenCanvas 320x240 para detección rápida
   const off=document.createElement('canvas');
@@ -3119,7 +3120,10 @@ async function runFaceLoop(){
     if(modelsLoaded&&now-lastRecog>=RECOG_MS){
       lastRecog=now;
       try{
-        offCtx.drawImage(video,0,0,320,240);
+      const espImg=window._espScanActive?document.getElementById('esp-stream-img'):null;
+      const useEsp=espImg&&espImg.naturalWidth>10&&espImg.complete;
+      const camSrc=useEsp?espImg:video;
+        offCtx.drawImage(camSrc,0,0,320,240);
         const sx=vw/320,sy=vh/240;
 
         if(faceMatcher){
@@ -3729,46 +3733,49 @@ function espActivateStream(){
   const layer = document.getElementById('esp-stream-layer');
   if(!layer) return;
 
-  // Esconder video local
+  // Ocultar video local
   const vid = document.getElementById('cam-feed');
   if(vid){ vid.style.display='none'; vid.srcObject=null; }
   const ph = document.getElementById('cam-ph');
   if(ph) ph.style.display='none';
 
-  // Mostrar capa
+  // Mostrar capa con IMG visible (no iframe — face-api necesita leer los pixeles)
   layer.style.cssText='position:absolute;inset:0;z-index:10;display:block;background:#040a14';
   layer.classList.add('active');
 
-  // Usar iframe — funciona con mixed content mejor que img
-  const streamUrl = 'http://'+ESP.ip+'/stream';
+  // Crear img que muestra el stream MJPEG a pantalla completa
   layer.innerHTML =
-    '<iframe src="'+streamUrl+'" '+
-    'style="width:100%;height:100%;border:none;display:block;" '+
-    'id="esp-iframe"></iframe>'+
-    '<canvas id="esp-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2"></canvas>'+
+    '<img id="esp-stream-img" '+
+    'src="http://'+ESP.ip+'/stream?t='+Date.now()+'" '+
+    'crossorigin="anonymous" '+
+    'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" '+
+    'alt="ESP32-CAM">'+
     '<div style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,.65);'+
     'color:#00e5a0;font-size:10px;font-weight:700;border-radius:6px;'+
-    'padding:2px 8px;font-family:monospace;z-index:3">ESP32-CAM LIVE</div>';
+    'padding:2px 8px;font-family:monospace;z-index:3;pointer-events:none">📡 ESP32-CAM</div>';
 
-  // Para face-api, necesitamos capturar frames del iframe
-  // Usamos el img oculto para el reconocimiento facial
+  window._espScanActive = true;
+
+  // FPS counter y reconexión automática
   const img = document.getElementById('esp-stream-img');
   if(img){
-    img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;z-index:1';
     img.onload = function(){
       ESP.fc++;
-      const now=performance.now();
-      if(!ESP.t0) ESP.t0=now;
-      if(now-ESP.t0>=1000){
-        const fpsel=document.getElementById('espFpsLbl');
-        if(fpsel) fpsel.textContent=Math.round(ESP.fc*1000/(now-ESP.t0))+' fps';
-        ESP.fc=0; ESP.t0=now;
+      const now = performance.now();
+      if(!ESP.t0) ESP.t0 = now;
+      if(now - ESP.t0 >= 1000){
+        const el = document.getElementById('espFpsLbl');
+        if(el) el.textContent = Math.round(ESP.fc*1000/(now-ESP.t0))+' fps';
+        ESP.fc = 0; ESP.t0 = now;
       }
     };
-    img.onerror=function(){
-      if(ESP.source==='esp32') setTimeout(()=>{img.src='http://'+ESP.ip+'/stream?t='+Date.now();},3000);
+    img.onerror = function(){
+      if(window._espScanActive)
+        setTimeout(()=>{
+          const i = document.getElementById('esp-stream-img');
+          if(i) i.src = 'http://'+ESP.ip+'/stream?t='+Date.now();
+        }, 2000);
     };
-    img.src='http://'+ESP.ip+'/stream?t='+Date.now();
   }
 }
 
@@ -3803,7 +3810,8 @@ function setCamSource(source){
     espActivateStream();
     // El reconocimiento facial ahora usa el <img> del stream
     window._espScanActive = true;
-    showToast('Usando ESP32-CAM para reconocimiento 📡');
+    espActivateStream();
+    showToast('ESP32-CAM activa — reconocimiento funcionando 📡');
   } else {
     // Volver a cámara local
     espDeactivateStream();
