@@ -795,42 +795,10 @@ body.role-coordinator .coord-only { display:flex !important; }
 /* ══ FIN TARJETAS ════════════════════════════════════════════ */
 
 
-/* ══ ESP32 PANEL (faltante) ══════════════════════════════════ */
-.esp-fab{position:fixed;bottom:80px;right:16px;z-index:9100;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0f6e56,#1d9e75);border:none;cursor:pointer;color:#fff;font-size:22px;box-shadow:0 4px 20px rgba(0,229,160,.4);display:flex;align-items:center;justify-content:center;transition:transform .15s;position:relative}
-.esp-fab:hover{transform:scale(1.08)}
-.esp-fab-status{position:absolute;top:2px;right:2px;width:12px;height:12px;border-radius:50%;background:#555;border:2px solid var(--bg);transition:background .3s}
-.esp-fab-status.live{background:var(--accent);animation:pulse 1.5s infinite}
-.esp-fab-status.err{background:var(--danger)}
-.esp-fab-status.scan{background:var(--warn);animation:pulse .6s infinite}
-.esp-panel{position:fixed;bottom:140px;right:16px;z-index:9100;width:310px;background:var(--surface);border:1px solid rgba(0,229,160,.2);border-radius:20px;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,.5);display:none;flex-direction:column;gap:10px;animation:fadeUp .2s ease}
-.esp-panel.open{display:flex}
-.esp-card-hdr{display:flex;align-items:center;justify-content:space-between}
-.esp-card-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px}
-.esp-card-title svg{width:15px;height:15px;color:var(--accent)}
-.esp-close{background:none;border:none;color:var(--muted);cursor:pointer;padding:3px;border-radius:6px}
-.esp-close svg{width:14px;height:14px}
-.esp-status-row{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 11px;font-size:11px}
-.esp-s-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
-.esp-s-dot.on{background:var(--accent)}
-.esp-s-dot.err{background:var(--danger)}
-.esp-s-dot.scan{background:var(--warn);animation:pulse .7s infinite}
-.esp-s-txt{flex:1;color:var(--text)}
-.esp-s-fps{font-size:10px;color:var(--muted);font-family:var(--mono)}
-.esp-stream-layer{position:absolute;inset:0;z-index:10;display:none;background:#040a14}
-.esp-stream-layer.active{display:block}
-.esp-stream-layer img{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0}
-.esp-source-tab{display:flex;gap:6px;background:var(--surface2);border-radius:10px;padding:4px}
-.esp-tab{flex:1;padding:7px;border:none;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);color:var(--muted);background:transparent;transition:all .2s}
-.esp-tab.active{background:var(--accent);color:#07101F}
-.esp-btn{width:100%;padding:9px;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s}
-.esp-btn svg{width:13px;height:13px}
-.esp-btn-g{background:linear-gradient(135deg,var(--accent),#00c888);color:#07101F}
-.esp-btn-r{background:rgba(255,61,90,.15);border:1px solid rgba(255,61,90,.3);color:var(--danger)}
-.esp-scan-res{font-size:11px;color:var(--muted);line-height:1.8;display:none}
-.esp-found{cursor:pointer;color:var(--accent2);text-decoration:underline;display:block}
-.esp-controls{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.esp-controls select{background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:4px 7px;font-family:var(--font);font-size:11px;outline:none}
-/* ══ FIN ESP32 ════════════════════════════════════════════════ */
+/* Bloque duplicado ".esp-fab / .esp-panel / .esp-card-hdr / ..." eliminado:
+   repetía exactamente las mismas clases que ya existen arriba en
+   "ESP32-CAM INTEGRADO" y quedaba enterrado dentro de un comentario HTML
+   mal cerrado más abajo (nunca se ejecutaba). Basura muerta, fuera. */
 
 
 /* ══ FLASH PANTALLA BLANCA ═══════════════════════════════════ */
@@ -3541,9 +3509,9 @@ function checkNotifBanner(){
       <span class="esp-s-fps" id="espFpsLbl"></span>
     </div>
 
-    <!-- IP manual -->
+    <!-- IP manual: solo como último recurso si mDNS/Firebase fallan -->
     <div style="display:flex;gap:7px">
-      <input type="text" id="espManualIp" placeholder="10.131.184.133"
+      <input type="text" id="espManualIp" placeholder="Solo si falla lo automático"
         style="flex:1;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);
                border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none"
         onkeydown="if(event.key==='Enter') espConnect(document.getElementById('espManualIp').value)">
@@ -3626,38 +3594,99 @@ function espToggle(){
   }
 }
 
-// ── Auto-detectar: primero Firebase, luego escaneo red
-async function espAutoDetect(){
+// ── Auto-detectar: mDNS (esp32cam.local) → Firebase → IP en caché → escaneo (último recurso)
+// Orden justificado: mDNS y el escaneo de subred SOLO funcionan si el navegador
+// y el ESP32 están en la MISMA red local sin aislamiento de clientes (AP/client
+// isolation). Muchas redes de universidad/oficina/WiFi público activan ese
+// aislamiento por seguridad: en esas redes, un dispositivo NUNCA puede ver a otro
+// aunque estén en la misma WiFi, sin importar cuán bueno sea el escaneo. Firebase
+// (relay en la nube) es el ÚNICO método que funciona ahí, porque ninguno de los
+// dos dispositivos le habla al otro directamente — ambos le hablan a Firebase.
+// Por eso Firebase va primero en la práctica real, y mDNS es solo un atajo rápido
+// cuando sí estás en la misma red sin restricciones.
+const ESP_MDNS_HOST = 'esp32cam.local'; // debe coincidir con MDNS_HOSTNAME en el firmware
+// IMPORTANTE: el ESP32 escribe su IP en Firebase REALTIME DATABASE
+// (HTTPClient/PUT a .../devices/esp32cam.json), NO en Firestore. Son
+// productos distintos dentro del mismo proyecto de Firebase. "db" más
+// arriba en este archivo es firebase.firestore() — sirve para
+// estudiantes/asistencia/cuentas, pero NUNCA verá lo que escribe el
+// ESP32. Por eso se usa fetch() directo al REST de Realtime Database
+// aquí abajo, en vez de reusar "db".
+const ESP_RTDB_URL = 'https://pidac-asistencia-default-rtdb.firebaseio.com';
+
+async function espTryHost(host, timeoutMs){
+  try{
+    const r = await fetch('http://'+host+'/status', {signal:AbortSignal.timeout(timeoutMs)});
+    const d = await r.json();
+    return {ip: host, model: d.model||'ESP32-CAM'};
+  }catch(e){ return null; }
+}
+
+async function espAutoDetect(auto){
   const res = document.getElementById('espScanRes');
   res.style.display='block';
-  res.innerHTML='🔍 Buscando en Firebase…';
   espSetStatus('scan','Buscando…');
 
-  // 1. Intentar leer IP de Firebase (el ESP32 la escribe al arrancar)
-  if(db){
+  // 1. mDNS: si el firmware anuncia esp32cam.local, esto es instantáneo y
+  //    sobrevive a que el ESP32 cambie de IP (DHCP), sin depender de la nube.
+  res.innerHTML='🔍 Probando esp32cam.local (mDNS)…';
+  const viaMdns = await espTryHost(ESP_MDNS_HOST, 1200);
+  if(viaMdns){
+    res.innerHTML = `✅ Encontrada por mDNS: <strong>${ESP_MDNS_HOST}</strong>`;
+    espConnect(ESP_MDNS_HOST);
+    return;
+  }
+
+  // 2. Firebase Realtime Database: el ESP32 escribe su IP al arrancar
+  //    y cada 2 min. Es la única vía confiable en redes con aislamiento
+  //    de clientes. Lectura vía REST (sin SDK, sin auth — la regla del
+  //    proyecto permite lectura pública en /devices).
+  {
+    res.innerHTML='🔍 mDNS no respondió. Buscando en Firebase Realtime Database…';
     try{
-      const snap = await db.collection('devices').doc('esp32cam').get();
-      if(snap.exists){
-        const data = snap.data();
-        const ip   = data.ip;
-        const ts   = data.updatedAt ? new Date(data.updatedAt) : null;
-        const age  = ts ? (Date.now()-ts.getTime())/1000 : 999;
-        if(ip && age < 300){ // menos de 5 minutos
+      const r = await fetch(ESP_RTDB_URL+'/devices/esp32cam.json', {signal:AbortSignal.timeout(4000)});
+      const data = await r.json();
+      if(data && data.ip){
+        const ip  = data.ip;
+        // updatedAt viene como epoch-ms real (server timestamp de Firebase)
+        const age = data.updatedAt ? (Date.now()-data.updatedAt)/1000 : 999;
+        if(age < 300){ // menos de 5 minutos: casi seguro sigue vigente
           res.innerHTML = `✅ ESP32-CAM encontrada en Firebase: <strong>${ip}</strong> (hace ${Math.round(age)}s)`;
           espConnect(ip);
           return;
-        } else if(ip){
-          res.innerHTML = `⚠️ Última IP conocida: ${ip} (hace ${Math.round(age/60)}min) — verificando…`;
-          espConnect(ip);
-          return;
+        } else {
+          res.innerHTML = `⚠️ Última IP conocida (Firebase): ${ip} (hace ${Math.round(age/60)}min) — verificando…`;
+          const ok = await espTryHost(ip, 2000);
+          if(ok){ espConnect(ip); return; }
+          res.innerHTML += '<br>❌ Esa IP ya no responde (probablemente cambió por DHCP).';
         }
       }
-    } catch(e){ console.warn('Firebase ESP32:', e.message); }
+    } catch(e){ console.warn('Firebase RTDB ESP32:', e.message); }
   }
 
-  // 2. Escaneo de red local
-  res.innerHTML = '🔍 Escaneando red local…';
-  const saved = localStorage.getItem('pidac_esp_ip') || '';
+  // 3. Última IP guardada en este navegador (por si Firebase no está configurado).
+  const saved = localStorage.getItem('pidac_esp_ip');
+  if(saved){
+    res.innerHTML='🔍 Probando última IP usada en este dispositivo…';
+    const ok = await espTryHost(saved, 1500);
+    if(ok){
+      res.innerHTML = `✅ Sigue activa: <strong>${saved}</strong>`;
+      espConnect(saved);
+      return;
+    }
+  }
+
+  // 4. Escaneo de subred — ÚLTIMO RECURSO. Lento (hasta ~1500 peticiones),
+  //    solo cubre subredes comunes y NO funciona con aislamiento de
+  //    clientes. Se SALTA en el auto-intento silencioso al cargar la
+  //    página (nadie quiere que la app tarde 10s solo por abrir el
+  //    dashboard); solo corre cuando el usuario pulsa el botón a mano.
+  if(auto){
+    res.innerHTML = '❌ No encontrada automáticamente (mDNS/Firebase). Abre el panel ESP32-CAM y pulsa "Detectar automáticamente" para un escaneo completo, o revisa que la cámara esté encendida.';
+    espSetStatus('err','No encontrada');
+    return;
+  }
+  res.innerHTML = '🔍 Sin suerte aún. Escaneando subredes comunes (esto puede fallar en redes de campus/oficina con aislamiento de clientes)…';
   let bases = ['10.131.184','10.0.0','192.168.1','192.168.0','192.168.100','172.20.10'];
   if(saved){ const p=saved.split('.'); if(p.length===4) bases.unshift(p.slice(0,3).join('.')); }
 
@@ -3679,11 +3708,11 @@ async function espAutoDetect(){
   }
 
   if(!found.length){
-    res.innerHTML='❌ No encontrada. Verifica que el ESP32 esté encendido y en la misma red.';
+    res.innerHTML='❌ No encontrada por ningún método. Si estás en WiFi de universidad/oficina, lo más probable es aislamiento de clientes — solo Firebase puede resolverlo, y para eso el ESP32 debe estar escribiendo su IP ahí. Si no tienes Firebase, conecta el ESP32 a un hotspot propio o red sin aislamiento.';
     espSetStatus('err','No encontrada');
     return;
   }
-  res.innerHTML = '✅ Encontrada:<br>'+found.map(f=>
+  res.innerHTML = '✅ Encontrada por escaneo:<br>'+found.map(f=>
     `<span class="esp-found" onclick="espConnect('${f.ip}')">${f.ip} — ${f.model}</span>`
   ).join('');
 }
@@ -3831,15 +3860,19 @@ async function espRegisterInFirebase(ip, model){
   } catch(e){}
 }
 
-// ── Auto-restaurar al iniciar
+// ── Auto-restaurar al iniciar: intenta reconectar en silencio con lo
+//    que ya se sabe, sin obligarte a abrir el panel ni tocar nada
 document.addEventListener('DOMContentLoaded',()=>{
   const saved = localStorage.getItem('pidac_esp_ip');
   if(saved){
     espSetStatus('','Última: '+saved);
     const inp = document.getElementById('espManualIp');
     if(inp) inp.value = saved;
-    setTimeout(()=> espConnect(saved, true), 2000);
   }
+  // Espera a que Firebase (Firestore, para el resto de la app) termine
+  // de intentar conectar, y entonces corre la detección completa
+  // (mDNS → RTDB → IP guardada → escaneo) sin que el usuario haga nada.
+  setTimeout(()=> espAutoDetect(), 2500);
 });
 // ══ FIN ESP32-CAM ════════════════════════════════════════════
 
@@ -4494,58 +4527,16 @@ function screenFlash(duration=250){
     </div>
   </div>
 </div>
-<!-- ══ FIN MODAL EXCUSA ════════════════════════════════════════ --
+<!-- ══ FIN MODAL EXCUSA ════════════════════════════════════════ -->
 
-<!-- ══ ESP32-CAM PANEL ════════════════════════════════════════ -->
-<div class="esp-panel" id="espPanel">
-  <div class="esp-card-hdr">
-    <div class="esp-card-title">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      ESP32-CAM
-    </div>
-    <button class="esp-close" onclick="document.getElementById('espPanel').classList.remove('open')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-  </div>
-  <div class="esp-status-row">
-    <span class="esp-s-dot" id="espDot"></span>
-    <span class="esp-s-txt" id="espTxt">Sin cámara</span>
-    <span class="esp-s-fps" id="espFpsLbl"></span>
-  </div>
-  <div style="display:flex;gap:7px">
-    <input type="text" id="espManualIp" placeholder="10.131.x.x"
-      style="flex:1;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none"
-      onkeydown="if(event.key==='Enter')espConnect(document.getElementById('espManualIp').value)">
-    <button class="esp-btn esp-btn-g" style="width:auto;padding:9px 14px" onclick="espConnect(document.getElementById('espManualIp').value)">Conectar</button>
-  </div>
-  <button class="esp-btn esp-btn-g" id="espAutoBtn" onclick="espAutoDetect()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    Detectar automáticamente
-  </button>
-  <div class="esp-scan-res" id="espScanRes"></div>
-  <div id="espConnected" style="display:none;flex-direction:column;gap:8px">
-    <div class="esp-controls">
-      <select onchange="espCtrl('framesize',this.value)">
-        <option value="5">QVGA 320×240</option>
-        <option value="8" selected>VGA 640×480</option>
-        <option value="9">SVGA 800×600</option>
-      </select>
-      <select onchange="espCtrl('quality',this.value)">
-        <option value="8" selected>Alta calidad</option>
-        <option value="15">Media</option>
-        <option value="25">Baja</option>
-      </select>
-    </div>
-    <button class="esp-btn esp-btn-r" onclick="espDisconnect()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-      Desconectar
-    </button>
-  </div>
-</div>
-<button class="esp-fab" id="espFab" onclick="document.getElementById('espPanel').classList.toggle('open');const s=localStorage.getItem('pidac_esp_ip');if(s)document.getElementById('espManualIp').value=s;" title="ESP32-CAM">
-  📷<span class="esp-fab-status" id="espFabStatus"></span>
-</button>
-<!-- ══ FIN ESP32 PANEL ══════════════════════════════════════════ -->
+<!-- El panel ESP32-CAM real y funcional es el bloque "esp-pill/espCard"
+     que ya está arriba (línea ~3519). Aquí abajo había un SEGUNDO panel
+     duplicado, con los mismos ids que el primero (espFab, espDot, etc.),
+     atrapado dentro de un comentario HTML mal cerrado — le faltaba el
+     ">" final — así que nunca se ejecutaba en el navegador. Si alguien
+     hubiera corregido ese comentario sin saber esto, la página se habría
+     roto por ids duplicados. Se elimina por completo: era la fuente #1
+     de bugs fantasma en este archivo. -->
 
 </body>
 </html>
