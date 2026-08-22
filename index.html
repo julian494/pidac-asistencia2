@@ -3532,6 +3532,17 @@ function checkNotifBanner(){
       Detectar automáticamente
     </button>
 
+    <!-- Configurar red WiFi de una cámara nueva/movida — todo dentro de PIDAC -->
+    <button class="esp-btn" onclick="espWifiWizardOpen()"
+      style="background:transparent;border:1px dashed var(--border);color:var(--muted);width:100%;
+             padding:8px;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;
+             font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px">
+        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+      </svg>
+      Configurar cámara nueva (WiFi)
+    </button>
+
     <div class="esp-scan-res" id="espScanRes"></div>
 
     <!-- Controles (solo visibles cuando conectado) -->
@@ -3849,18 +3860,122 @@ function setCamSource(source){
   }
 }
 
-// ── Registrar IP en Firebase (llamar después de conectar)
-async function espRegisterInFirebase(ip, model){
-  if(!db) return;
-  try{
-    await fbSet('devices','esp32cam',{
-      ip, model: model||'ESP32-CAM',
-      updatedAt: new Date().toISOString()
-    });
-  } catch(e){}
+// (Se eliminó "espRegisterInFirebase": escribía a Firestore —el mismo
+// error de origen ya explicado más arriba— y nunca se llamaba desde
+// ningún lado. El ESP32 se registra a sí mismo directo en Realtime
+// Database vía HTTP; el frontend NUNCA necesita escribir ahí.)
+
+// ══ ASISTENTE DE CONFIGURACIÓN WIFI (todo dentro de PIDAC) ═══
+const ESP_SETUP_AP_IP = 'http://192.168.4.1';
+let espWizNetworks = [];
+let espWizSelected = null;
+
+function espWizardOpen(){
+  document.getElementById('espWizardOverlay').classList.add('open');
+  espWizStep1();
+}
+function espWizardClose(){
+  document.getElementById('espWizardOverlay').classList.remove('open');
 }
 
-// ── Auto-restaurar al iniciar: intenta reconectar en silencio con lo
+function espWizStep1(){
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  document.getElementById('espWizardBody').innerHTML = `
+    <div><span class="esp-wizard-step-n">1</span><strong>Enciende la cámara</strong></div>
+    <div>Si es nueva o la moviste de red, creará su propia red WiFi para configurarse.</div>
+    <div><span class="esp-wizard-step-n">2</span><strong>Conéctate a "PIDAC-CAM-Setup"</strong></div>
+    <div>Sin clave. Esto SÍ hay que hacerlo desde los Ajustes de WiFi del celular — ningún navegador puede hacerlo por ti, es una restricción del sistema operativo.</div>
+    ${isAndroid ? `<a class="esp-btn esp-btn-g" style="text-decoration:none" href="intent:#Intent;action=android.settings.WIFI_SETTINGS;end">Abrir Ajustes de WiFi</a>` : `<div class="esp-wiz-err">En iPhone: Ajustes → WiFi → "PIDAC-CAM-Setup"</div>`}
+    <div style="margin-top:4px">Cuando ya estés conectado a esa red, vuelve aquí y sigue.</div>
+    <button class="esp-btn esp-btn-g" onclick="espWizStep2()">Ya me conecté →</button>
+  `;
+}
+
+async function espWizStep2(){
+  document.getElementById('espWizardBody').innerHTML = `
+    <div><span class="esp-wizard-step-n">3</span><strong>Buscando redes disponibles…</strong></div>
+    <div class="esp-wiz-err" style="display:none" id="espWizScanErr"></div>
+  `;
+  try{
+    const r = await fetch(ESP_SETUP_AP_IP+'/scan', {signal:AbortSignal.timeout(6000)});
+    const nets = await r.json();
+    espWizNetworks = (nets||[]).filter(n=>n.ssid).sort((a,b)=>b.rssi-a.rssi);
+    espWizRenderNetworks();
+  }catch(e){
+    document.getElementById('espWizardBody').innerHTML = `
+      <div class="esp-wiz-err"><strong>No pude comunicarme con la cámara.</strong></div>
+      <div>Confirma que tu celular sigue conectado a la red <strong>PIDAC-CAM-Setup</strong> (no a tu red normal, no a datos móviles) y que la cámara esté encendida.</div>
+      <button class="esp-btn esp-btn-g" onclick="espWizStep2()">Reintentar</button>
+      <button class="esp-btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--text)" onclick="espWizStep1()">← Volver</button>
+    `;
+  }
+}
+
+function espWizRenderNetworks(){
+  const list = espWizNetworks.map((n,i)=>`
+    <div class="esp-net-item ${espWizSelected===i?'sel':''}" onclick="espWizSelect(${i})">
+      <span>${n.secure?'🔒 ':'📶 '}${n.ssid}</span>
+      <small>${n.rssi} dBm</small>
+    </div>`).join('') || '<div class="esp-wiz-err">No se detectaron redes cercanas.</div>';
+
+  document.getElementById('espWizardBody').innerHTML = `
+    <div><span class="esp-wizard-step-n">4</span><strong>Elige tu red WiFi</strong></div>
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow:auto">${list}</div>
+    <input type="text" id="espWizSsidManual" class="esp-wiz-input" placeholder="O escribe el nombre exacto (SSID oculto)">
+    <input type="password" id="espWizPass" class="esp-wiz-input" placeholder="Contraseña de esa red">
+    <div class="esp-wiz-err" id="espWizSaveErr" style="display:none"></div>
+    <button class="esp-btn esp-btn-g" onclick="espWizSave()">Conectar</button>
+    <button class="esp-btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--text)" onclick="espWizStep2()">← Volver a escanear</button>
+  `;
+}
+
+function espWizSelect(i){
+  espWizSelected = i;
+  espWizRenderNetworks();
+  document.getElementById('espWizSsidManual').value = espWizNetworks[i].ssid;
+}
+
+async function espWizSave(){
+  const ssid = document.getElementById('espWizSsidManual').value.trim();
+  const pass = document.getElementById('espWizPass').value;
+  const errEl = document.getElementById('espWizSaveErr');
+  if(!ssid){ errEl.style.display='block'; errEl.textContent='Elige o escribe una red.'; return; }
+
+  document.getElementById('espWizardBody').innerHTML = `<div><span class="esp-wizard-step-n">5</span><strong>Guardando y reiniciando la cámara…</strong></div>`;
+  try{
+    const r = await fetch(ESP_SETUP_AP_IP+'/save', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ssid, password: pass}),
+      signal: AbortSignal.timeout(6000)
+    });
+    const data = await r.json();
+    if(!data.ok) throw new Error(data.error||'La cámara rechazó los datos');
+    espWizStep3();
+  }catch(e){
+    document.getElementById('espWizardBody').innerHTML = `
+      <div class="esp-wiz-err"><strong>No se pudo guardar.</strong> ${e.message||''}</div>
+      <button class="esp-btn esp-btn-g" onclick="espWizRenderNetworks()">Reintentar</button>
+    `;
+  }
+}
+
+function espWizStep3(){
+  document.getElementById('espWizardBody').innerHTML = `
+    <div class="esp-wiz-ok"><strong>✓ Red guardada.</strong> La cámara se está reiniciando y conectando a tu red.</div>
+    <div><span class="esp-wizard-step-n">6</span><strong>Vuelve a tu WiFi normal</strong></div>
+    <div>Ahora reconecta tu celular a tu red de siempre (ya no a "PIDAC-CAM-Setup") y espera unos 15 segundos a que la cámara arranque.</div>
+    <button class="esp-btn esp-btn-g" onclick="espWizStep4()">Ya volví a mi red — buscar cámara</button>
+  `;
+}
+
+async function espWizStep4(){
+  document.getElementById('espWizardBody').innerHTML = `<div><strong>Buscando la cámara en tu red…</strong></div>`;
+  await espAutoDetect(); // detección completa: mDNS → Firebase → escaneo
+  espWizardClose();
+}
+
+
 //    que ya se sabe, sin obligarte a abrir el panel ni tocar nada
 document.addEventListener('DOMContentLoaded',()=>{
   const saved = localStorage.getItem('pidac_esp_ip');
@@ -4537,6 +4652,43 @@ function screenFlash(duration=250){
      hubiera corregido ese comentario sin saber esto, la página se habría
      roto por ids duplicados. Se elimina por completo: era la fuente #1
      de bugs fantasma en este archivo. -->
+
+<!-- ══ ASISTENTE DE CONFIGURACIÓN WIFI (ESP32-CAM) ═══════════════
+     Todo el proceso vive dentro de PIDAC. El único paso que ningún
+     navegador puede evitar: el celular tiene que unirse manualmente
+     a la red "PIDAC-CAM-Setup" desde los Ajustes de WiFi del sistema
+     — eso es una restricción de seguridad de Android/iOS, no de PIDAC.
+     A partir de ahí, todo se hace aquí. -->
+<div class="esp-wizard-overlay" id="espWizardOverlay" onclick="if(event.target===this)espWizardClose()">
+  <div class="esp-wizard">
+    <div class="esp-wizard-hdr">
+      <span>Configurar cámara ESP32-CAM</span>
+      <button class="esp-close" onclick="espWizardClose()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="esp-wizard-body" id="espWizardBody"><!-- inyectado por JS según el paso --></div>
+  </div>
+</div>
+
+<style>
+.esp-wizard-overlay{position:fixed;inset:0;z-index:9500;background:rgba(4,10,20,.72);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:16px}
+.esp-wizard-overlay.open{display:flex}
+.esp-wizard{width:100%;max-width:380px;max-height:86vh;overflow:auto;background:var(--surface);border:1px solid rgba(0,229,160,.2);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.esp-wizard-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700}
+.esp-wizard-body{padding:16px;display:flex;flex-direction:column;gap:12px;font-size:12.5px;color:var(--text);line-height:1.55}
+.esp-wizard-body h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin:0 0 2px}
+.esp-wizard-step-n{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--accent);color:#07101F;font-size:11px;font-weight:800;margin-right:6px;flex-shrink:0}
+.esp-net-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:12.5px}
+.esp-net-item:hover{border-color:var(--accent)}
+.esp-net-item.sel{border-color:var(--accent);background:rgba(0,229,160,.08)}
+.esp-net-item small{color:var(--muted);font-family:var(--mono);font-size:10px}
+.esp-wiz-input{width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none}
+.esp-wiz-input:focus{border-color:var(--accent)}
+.esp-wiz-err{color:var(--danger);font-size:11.5px}
+.esp-wiz-ok{color:var(--accent);font-size:11.5px}
+</style>
+
 
 </body>
 </html>
