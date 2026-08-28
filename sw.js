@@ -1,5 +1,5 @@
-// ══ PIDAC Service Worker v6 ══════════════════════════════════
-const CACHE_NAME = 'pidac-v6';
+// ══ PIDAC Service Worker v7 ══════════════════════════════════
+const CACHE_NAME = 'pidac-v7';
 const CACHE_STATIC = [
   './',
   './index.html',
@@ -28,14 +28,30 @@ self.addEventListener('activate', e => {
 
 // ── Fetch: red primero, caché como respaldo (offline)
 self.addEventListener('fetch', e => {
-  // No interceptar Firebase ni CDN externos (face-api, fonts)
   const url = e.request.url;
+
+  // No interceptar Firebase ni CDN externos (face-api, fonts)
   if(url.includes('firestore.googleapis.com') ||
      url.includes('firebase') ||
      url.includes('fonts.googleapis.com') ||
      url.includes('cdn.jsdelivr.net') ||
      url.includes('gstatic.com')){
     return; // dejar que el navegador lo maneje directo
+  }
+
+  // NO interceptar el ESP32-CAM (ni ningún otro dispositivo local).
+  // PIDAC entero es HTTPS — así que CUALQUIER petición en HTTP plano
+  // solo puede ser tráfico hacia el ESP32 (192.168.4.1 en modo config,
+  // su IP real en la red, esp32cam.local, o el escaneo de subred).
+  // Antes esto NO estaba excluido: el Service Worker interceptaba la
+  // petición, fallaba por contenido mixto DENTRO del propio worker, y
+  // como la URL nunca estaba en caché, devolvía "sin respuesta" —
+  // eso se veía en la página como un fallo casi instantáneo, no como
+  // un timeout real. Rompía el stream, el /status, el asistente WiFi
+  // y la detección automática por igual, siempre, desde el día uno
+  // de este archivo.
+  if(url.startsWith('http://')){
+    return; // dejar pasar sin tocar — nunca cachear ni interceptar HTTP
   }
 
   e.respondWith(
