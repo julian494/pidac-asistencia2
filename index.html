@@ -3625,9 +3625,19 @@ const ESP_MDNS_HOST = 'esp32cam.local'; // debe coincidir con MDNS_HOSTNAME en e
 // aquí abajo, en vez de reusar "db".
 const ESP_RTDB_URL = 'https://pidac-asistencia-default-rtdb.firebaseio.com';
 
+// Si PIDAC se sirve por HTTPS (GitHub Pages), el ESP32 también debe
+// hablarse por HTTPS — si no, el navegador bloquea el stream/las
+// peticiones por "mixed content". El ESP32 escucha HTTPS en 443
+// (control/status/capture/ping, mismo puerto implícito que 80) y 8443
+// (stream, en vez de 81). Con certificado autofirmado, el navegador
+// pide aceptar una advertencia una vez por dispositivo.
+function espProto(){ return location.protocol==='https:' ? 'https:' : 'http:'; }
+function espBase(ip){ return espProto()+'//'+ip; } // 443/80 son puertos por defecto, no hace falta escribirlos
+function espStreamBase(ip){ return espProto()+'//'+ip+(espProto()==='https:' ? ':8443' : ':81'); }
+
 async function espTryHost(host, timeoutMs){
   try{
-    const r = await fetch('http://'+host+'/status', {signal:AbortSignal.timeout(timeoutMs)});
+    const r = await fetch(espBase(host)+'/status', {signal:AbortSignal.timeout(timeoutMs)});
     const d = await r.json();
     return {ip: host, model: d.model||'ESP32-CAM'};
   }catch(e){ return null; }
@@ -3708,7 +3718,7 @@ async function espAutoDetect(auto){
       for(let i=s;i<s+25&&i<=254;i++){
         const tip=base+'.'+i;
         batch.push(
-          fetch('http://'+tip+'/status',{signal:AbortSignal.timeout(500)})
+          fetch(espBase(tip)+'/status',{signal:AbortSignal.timeout(500)})
             .then(r=>r.json()).then(d=>{ if(d.model) found.push({ip:tip,model:d.model}); })
             .catch(()=>{})
         );
@@ -3737,7 +3747,7 @@ async function espConnect(ip, silent=false){
 
   // Verificar que responde
   try{
-    const r = await fetch('http://'+ip+'/status', {signal:AbortSignal.timeout(3000)});
+    const r = await fetch(espBase(ip)+'/status', {signal:AbortSignal.timeout(3000)});
     const d = await r.json();
     espSetStatus('on', (d.model||'ESP32-CAM')+' · '+ip);
     document.getElementById('espConnected').style.display='flex';
@@ -3764,7 +3774,7 @@ function espDisconnect(){
 
 function espCtrl(v,val){
   if(!ESP.ip) return;
-  fetch('http://'+ESP.ip+'/control?var='+v+'&val='+val).catch(()=>{});
+  fetch(espBase(ESP.ip)+'/control?var='+v+'&val='+val).catch(()=>{});
 }
 
 // ── Activar stream ESP32 en el modal de escaneo
@@ -3786,7 +3796,7 @@ function espActivateStream(){
   // Crear img que muestra el stream MJPEG a pantalla completa
   layer.innerHTML =
     '<img id="esp-stream-img" '+
-    'src="http://'+ESP.ip+':81/stream?t='+Date.now()+'" '+
+    'src="'+espStreamBase(ESP.ip)+'/stream?t='+Date.now()+'" '+
     'crossorigin="anonymous" '+
     'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" '+
     'alt="ESP32-CAM">'+
@@ -3813,7 +3823,7 @@ function espActivateStream(){
       if(window._espScanActive)
         setTimeout(()=>{
           const i = document.getElementById('esp-stream-img');
-          if(i) i.src = 'http://'+ESP.ip+':81/stream?t='+Date.now();
+          if(i) i.src = espStreamBase(ESP.ip)+'/stream?t='+Date.now();
         }, 2000);
     };
   }
