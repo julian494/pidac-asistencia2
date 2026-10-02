@@ -3599,156 +3599,61 @@ function espSetStatus(state, txt){
 function espToggle(){
   const c = document.getElementById('espCard');
   c.classList.toggle('open');
-  if(c.classList.contains('open')){
-    const saved = localStorage.getItem('pidac_esp_ip');
-    if(saved && !ESP.live) espConnect(saved, true); // reconectar silencioso
-  }
+  if(c.classList.contains('open') && !ESP.live) espConnect(RELAY_URL, true); // reconectar silencioso
 }
 
-// ── Auto-detectar: mDNS (esp32cam.local) → Firebase → IP en caché → escaneo (último recurso)
-// Orden justificado: mDNS y el escaneo de subred SOLO funcionan si el navegador
-// y el ESP32 están en la MISMA red local sin aislamiento de clientes (AP/client
-// isolation). Muchas redes de universidad/oficina/WiFi público activan ese
-// aislamiento por seguridad: en esas redes, un dispositivo NUNCA puede ver a otro
-// aunque estén en la misma WiFi, sin importar cuán bueno sea el escaneo. Firebase
-// (relay en la nube) es el ÚNICO método que funciona ahí, porque ninguno de los
-// dos dispositivos le habla al otro directamente — ambos le hablan a Firebase.
-// Por eso Firebase va primero en la práctica real, y mDNS es solo un atajo rápido
-// cuando sí estás en la misma red sin restricciones.
-const ESP_MDNS_HOST = 'esp32cam.local'; // debe coincidir con MDNS_HOSTNAME en el firmware
-// IMPORTANTE: el ESP32 escribe su IP en Firebase REALTIME DATABASE
-// (HTTPClient/PUT a .../devices/esp32cam.json), NO en Firestore. Son
-// productos distintos dentro del mismo proyecto de Firebase. "db" más
-// arriba en este archivo es firebase.firestore() — sirve para
-// estudiantes/asistencia/cuentas, pero NUNCA verá lo que escribe el
-// ESP32. Por eso se usa fetch() directo al REST de Realtime Database
-// aquí abajo, en vez de reusar "db".
-const ESP_RTDB_URL = 'https://pidac-asistencia-default-rtdb.firebaseio.com';
+// ── El ESP32 ya NO se busca en la red — empuja frames hacia un relay
+// HTTPS público con URL fija, así que "conectar" es solo confirmar que
+// el relay reporta una cámara activa. Esto reemplaza por completo el
+// mDNS / Firebase-para-IP / escaneo de subred que había antes: ya no
+// hace falta "encontrar" nada, ni preocuparse por aislamiento de
+// clientes en redes de universidad/oficina (el relay es un servidor
+// público normal, no un dispositivo en la LAN).
+const RELAY_URL = 'https://pidac-relay.onrender.com'; // debe ser IGUAL al RELAY_URL del .ino
+
+// "ip" se mantiene como parámetro en estas funciones solo por
+// compatibilidad con el resto del código que ya las llama así —
+// en la práctica ya no representa una IP, siempre es RELAY_URL.
+function espBase(ip){ return RELAY_URL; }
+function espStreamBase(ip){ return RELAY_URL; }
 
 async function espTryHost(host, timeoutMs){
   try{
-    const r = await fetch('http://'+host+'/status', {signal:AbortSignal.timeout(timeoutMs)});
+    const r = await fetch(RELAY_URL+'/status', {signal:AbortSignal.timeout(timeoutMs)});
     const d = await r.json();
-    return {ip: host, model: d.model||'ESP32-CAM'};
+    return d.connected ? {ip: RELAY_URL, model: d.model||'ESP32-CAM'} : null;
   }catch(e){ return null; }
 }
 
 async function espAutoDetect(auto){
   const res = document.getElementById('espScanRes');
   res.style.display='block';
-  espSetStatus('scan','Buscando…');
-
-  // 1. mDNS: si el firmware anuncia esp32cam.local, esto es instantáneo y
-  //    sobrevive a que el ESP32 cambie de IP (DHCP), sin depender de la nube.
-  res.innerHTML='🔍 Probando esp32cam.local (mDNS)…';
-  const viaMdns = await espTryHost(ESP_MDNS_HOST, 1200);
-  if(viaMdns){
-    res.innerHTML = `✅ Encontrada por mDNS: <strong>${ESP_MDNS_HOST}</strong>`;
-    espConnect(ESP_MDNS_HOST);
-    return;
+  espSetStatus('scan','Conectando al relay…');
+  const found = await espTryHost(RELAY_URL, 4000);
+  if(found){
+    res.innerHTML = `✅ Cámara conectada vía relay (${found.model})`;
+    espConnect(RELAY_URL);
+  } else {
+    res.innerHTML = '❌ El relay no reporta ninguna cámara activa — revisa que el ESP32 esté encendido, conectado a WiFi, y subiendo frames (Monitor Serie).';
+    espSetStatus('err','Sin cámara');
   }
-
-  // 2. Firebase Realtime Database: el ESP32 escribe su IP al arrancar
-  //    y cada 2 min. Es la única vía confiable en redes con aislamiento
-  //    de clientes. Lectura vía REST (sin SDK, sin auth — la regla del
-  //    proyecto permite lectura pública en /devices).
-  {
-    res.innerHTML='🔍 mDNS no respondió. Buscando en Firebase Realtime Database…';
-    try{
-      const r = await fetch(ESP_RTDB_URL+'/devices/esp32cam.json', {signal:AbortSignal.timeout(4000)});
-      const data = await r.json();
-      if(data && data.ip){
-        const ip  = data.ip;
-        // updatedAt viene como epoch-ms real (server timestamp de Firebase)
-        const age = data.updatedAt ? (Date.now()-data.updatedAt)/1000 : 999;
-        if(age < 300){ // menos de 5 minutos: casi seguro sigue vigente
-          res.innerHTML = `✅ ESP32-CAM encontrada en Firebase: <strong>${ip}</strong> (hace ${Math.round(age)}s)`;
-          espConnect(ip);
-          return;
-        } else {
-          res.innerHTML = `⚠️ Última IP conocida (Firebase): ${ip} (hace ${Math.round(age/60)}min) — verificando…`;
-          const ok = await espTryHost(ip, 2000);
-          if(ok){ espConnect(ip); return; }
-          res.innerHTML += '<br>❌ Esa IP ya no responde (probablemente cambió por DHCP).';
-        }
-      }
-    } catch(e){ console.warn('Firebase RTDB ESP32:', e.message); }
-  }
-
-  // 3. Última IP guardada en este navegador (por si Firebase no está configurado).
-  const saved = localStorage.getItem('pidac_esp_ip');
-  if(saved){
-    res.innerHTML='🔍 Probando última IP usada en este dispositivo…';
-    const ok = await espTryHost(saved, 1500);
-    if(ok){
-      res.innerHTML = `✅ Sigue activa: <strong>${saved}</strong>`;
-      espConnect(saved);
-      return;
-    }
-  }
-
-  // 4. Escaneo de subred — ÚLTIMO RECURSO. Lento (hasta ~1500 peticiones),
-  //    solo cubre subredes comunes y NO funciona con aislamiento de
-  //    clientes. Se SALTA en el auto-intento silencioso al cargar la
-  //    página (nadie quiere que la app tarde 10s solo por abrir el
-  //    dashboard); solo corre cuando el usuario pulsa el botón a mano.
-  if(auto){
-    res.innerHTML = '❌ No encontrada automáticamente (mDNS/Firebase). Abre el panel ESP32-CAM y pulsa "Detectar automáticamente" para un escaneo completo, o revisa que la cámara esté encendida.';
-    espSetStatus('err','No encontrada');
-    return;
-  }
-  res.innerHTML = '🔍 Sin suerte aún. Escaneando subredes comunes (esto puede fallar en redes de campus/oficina con aislamiento de clientes)…';
-  let bases = ['10.131.184','10.0.0','192.168.1','192.168.0','192.168.100','172.20.10'];
-  if(saved){ const p=saved.split('.'); if(p.length===4) bases.unshift(p.slice(0,3).join('.')); }
-
-  const found = [];
-  outer: for(const base of bases){
-    for(let s=1;s<=254;s+=25){
-      const batch=[];
-      for(let i=s;i<s+25&&i<=254;i++){
-        const tip=base+'.'+i;
-        batch.push(
-          fetch('http://'+tip+'/status',{signal:AbortSignal.timeout(500)})
-            .then(r=>r.json()).then(d=>{ if(d.model) found.push({ip:tip,model:d.model}); })
-            .catch(()=>{})
-        );
-      }
-      await Promise.all(batch);
-      if(found.length) break outer;
-    }
-  }
-
-  if(!found.length){
-    res.innerHTML='❌ No encontrada por ningún método. Si estás en WiFi de universidad/oficina, lo más probable es aislamiento de clientes — solo Firebase puede resolverlo, y para eso el ESP32 debe estar escribiendo su IP ahí. Si no tienes Firebase, conecta el ESP32 a un hotspot propio o red sin aislamiento.';
-    espSetStatus('err','No encontrada');
-    return;
-  }
-  res.innerHTML = '✅ Encontrada por escaneo:<br>'+found.map(f=>
-    `<span class="esp-found" onclick="espConnect('${f.ip}')">${f.ip} — ${f.model}</span>`
-  ).join('');
 }
 
-// ── Conectar al ESP32
+// ── Conectar (en la práctica: confirmar que el relay tiene cámara)
 async function espConnect(ip, silent=false){
-  if(!ip) return;
-  ESP.ip = ip;
-  localStorage.setItem('pidac_esp_ip', ip);
-  espSetStatus('scan', 'Conectando a '+ip+'…');
-
-  // Verificar que responde
+  ESP.ip = RELAY_URL; // el argumento "ip" se ignora — solo hay un destino posible
+  espSetStatus('scan', 'Conectando…');
   try{
-    const r = await fetch('http://'+ip+'/status', {signal:AbortSignal.timeout(3000)});
+    const r = await fetch(RELAY_URL+'/status', {signal:AbortSignal.timeout(3000)});
     const d = await r.json();
-    espSetStatus('on', (d.model||'ESP32-CAM')+' · '+ip);
+    espSetStatus(d.connected ? 'on' : 'err', (d.model||'ESP32-CAM')+(d.connected?'':' (sin señal)'));
     document.getElementById('espConnected').style.display='flex';
-    if(!silent) showToast('📷 ESP32-CAM conectada · '+ip);
-    // Actualizar stream en el modal si está abierto
+    if(!silent) showToast(d.connected ? '📷 ESP32-CAM conectada vía relay' : '⚠️ Relay activo pero sin señal del ESP32');
     if(ESP.source==='esp32') espActivateStream();
   } catch(e){
-    // Intentar conectar de todos modos (algunos firmwares no tienen /status)
-    espSetStatus('on', ip+' (sin status)');
+    espSetStatus('err', 'Relay no responde');
     document.getElementById('espConnected').style.display='flex';
-    if(ESP.source==='esp32') espActivateStream();
+    if(!silent) showToast('❌ No se pudo conectar al relay');
   }
   ESP.live = true;
 }
@@ -3758,13 +3663,15 @@ function espDisconnect(){
   espSetStatus('','Sin cámara');
   document.getElementById('espConnected').style.display='none';
   if(ESP.source==='esp32') setCamSource('local');
-  localStorage.removeItem('pidac_esp_ip');
   showToast('ESP32-CAM desconectada');
 }
 
 function espCtrl(v,val){
-  if(!ESP.ip) return;
-  fetch('http://'+ESP.ip+'/control?var='+v+'&val='+val).catch(()=>{});
+  // El control en vivo (resolución/calidad) no está disponible con el
+  // relay — el ESP32 solo EMPUJA frames hacia afuera, no recibe
+  // comandos de vuelta. Para cambiar esto, ajusta CAM_FRAMESIZE /
+  // CAM_JPEG_QUAL directo en el .ino y vuelve a subirlo.
+  showToast('Ese control no está disponible con el relay — cámbialo en el firmware del ESP32');
 }
 
 // ── Activar stream ESP32 en el modal de escaneo
@@ -3786,7 +3693,7 @@ function espActivateStream(){
   // Crear img que muestra el stream MJPEG a pantalla completa
   layer.innerHTML =
     '<img id="esp-stream-img" '+
-    'src="http://'+ESP.ip+':81/stream?t='+Date.now()+'" '+
+    'src="'+espStreamBase(ESP.ip)+'/stream?t='+Date.now()+'" '+
     'crossorigin="anonymous" '+
     'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" '+
     'alt="ESP32-CAM">'+
@@ -3813,7 +3720,7 @@ function espActivateStream(){
       if(window._espScanActive)
         setTimeout(()=>{
           const i = document.getElementById('esp-stream-img');
-          if(i) i.src = 'http://'+ESP.ip+':81/stream?t='+Date.now();
+          if(i) i.src = espStreamBase(ESP.ip)+'/stream?t='+Date.now();
         }, 2000);
     };
   }
@@ -3970,24 +3877,18 @@ function espWizStep3(){
 }
 
 async function espWizStep4(){
-  document.getElementById('espWizardBody').innerHTML = `<div><strong>Buscando la cámara en tu red…</strong></div>`;
-  await espAutoDetect(); // detección completa: mDNS → Firebase → escaneo
+  document.getElementById('espWizardBody').innerHTML = `<div><strong>Conectando al relay…</strong></div>`;
+  await espAutoDetect();
   espWizardClose();
 }
 
-
-//    que ya se sabe, sin obligarte a abrir el panel ni tocar nada
+// Al cargar la página, confirmar solo si el relay reporta cámara activa
+// (ya no hay nada que "buscar" — el relay siempre está en la misma URL).
 document.addEventListener('DOMContentLoaded',()=>{
-  const saved = localStorage.getItem('pidac_esp_ip');
-  if(saved){
-    espSetStatus('','Última: '+saved);
-    const inp = document.getElementById('espManualIp');
-    if(inp) inp.value = saved;
-  }
   // Espera a que Firebase (Firestore, para el resto de la app) termine
-  // de intentar conectar, y entonces corre la detección completa
-  // (mDNS → RTDB → IP guardada → escaneo) sin que el usuario haga nada.
-  setTimeout(()=> espAutoDetect(), 2500);
+  // de intentar conectar, y entonces confirma la cámara sin que el
+  // usuario tenga que hacer nada.
+  setTimeout(()=> espAutoDetect(true), 2500);
 });
 // ══ FIN ESP32-CAM ════════════════════════════════════════════
 
