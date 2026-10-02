@@ -2933,6 +2933,7 @@ async function startScan(){
     // Activar capa del stream ESP32
     espActivateStream();
     window._espScanActive = true;
+  if(!window._espPoll) window._espPoll = setInterval(espPollStatus, 2000);
     // Mostrar HUD activo
     const fpsHud = document.getElementById('cam-fps-hud');
     if(fpsHud) fpsHud.style.display='block';
@@ -3548,12 +3549,12 @@ function checkNotifBanner(){
     <!-- Controles (solo visibles cuando conectado) -->
     <div id="espConnected" style="display:none;flex-direction:column;gap:8px">
       <div class="esp-controls">
-        <select onchange="espCtrl('framesize',this.value)" title="Resolución">
-          <option value="5">QVGA 320×240 (30fps)</option>
-          <option value="8" selected>VGA 640×480 (25fps)</option>
-          <option value="9">SVGA 800×600 (18fps)</option>
+        <select id="espSelRes" onchange="espCtrl('framesize',this.value)" title="Resolución">
+          <option value="5">QVGA 320×240 (más rápido)</option>
+          <option value="8" selected>VGA 640×480</option>
+          <option value="9">SVGA 800×600 (más detalle)</option>
         </select>
-        <select onchange="espCtrl('quality',this.value)" title="Calidad">
+        <select id="espSelQual" onchange="espCtrl('quality',this.value)" title="Calidad">
           <option value="10">Alta calidad</option>
           <option value="15" selected>Media</option>
           <option value="25">Baja</option>
@@ -3648,6 +3649,9 @@ async function espConnect(ip, silent=false){
     const d = await r.json();
     espSetStatus(d.connected ? 'on' : 'err', (d.model||'ESP32-CAM')+(d.connected?'':' (sin señal)'));
     document.getElementById('espConnected').style.display='flex';
+    if(d.settings){ const a=document.getElementById('espSelRes'), b=document.getElementById('espSelQual');
+      if(a && d.settings.framesize!=null) a.value=d.settings.framesize;
+      if(b && d.settings.quality!=null) b.value=d.settings.quality; }
     if(!silent) showToast(d.connected ? '📷 ESP32-CAM conectada vía relay' : '⚠️ Relay activo pero sin señal del ESP32');
     if(ESP.source==='esp32') espActivateStream();
   } catch(e){
@@ -3666,12 +3670,25 @@ function espDisconnect(){
   showToast('ESP32-CAM desconectada');
 }
 
-function espCtrl(v,val){
-  // El control en vivo (resolución/calidad) no está disponible con el
-  // relay — el ESP32 solo EMPUJA frames hacia afuera, no recibe
-  // comandos de vuelta. Para cambiar esto, ajusta CAM_FRAMESIZE /
-  // CAM_JPEG_QUAL directo en el .ino y vuelve a subirlo.
-  showToast('Ese control no está disponible con el relay — cámbialo en el firmware del ESP32');
+async function espCtrl(v,val){
+  // Manda el ajuste al relay; el relay lo reenvía al ESP32 por su WebSocket.
+  try{
+    const r = await fetch(RELAY_URL+'/control?var='+encodeURIComponent(v)+'&val='+encodeURIComponent(val), {method:'POST', signal:AbortSignal.timeout(4000)});
+    const d = await r.json();
+    if(!d.ok) return showToast('❌ '+(d.error||'No se pudo aplicar'));
+    showToast(d.delivered ? '✅ Ajuste enviado a la cámara' : '⏳ Guardado — se aplicará cuando la cámara se conecte por WebSocket');
+  }catch(e){ showToast('❌ El relay no responde'); }
+}
+
+// FPS reales: los mide el relay (un <img> MJPEG no dispara onload por frame)
+async function espPollStatus(){
+  if(!ESP.live) return;
+  try{
+    const r = await fetch(RELAY_URL+'/status', {signal:AbortSignal.timeout(2500)});
+    const d = await r.json();
+    const el = document.getElementById('espFpsLbl');
+    if(el) el.textContent = d.connected ? (d.fpsIn||0)+' fps' : 'sin señal';
+  }catch(e){}
 }
 
 // ── Activar stream ESP32 en el modal de escaneo
@@ -3712,7 +3729,7 @@ function espActivateStream(){
       if(!ESP.t0) ESP.t0 = now;
       if(now - ESP.t0 >= 1000){
         const el = document.getElementById('espFpsLbl');
-        if(el) el.textContent = Math.round(ESP.fc*1000/(now-ESP.t0))+' fps';
+        /* el fps real ahora lo escribe espPollStatus() desde /status */
         ESP.fc = 0; ESP.t0 = now;
       }
     };
