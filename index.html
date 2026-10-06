@@ -3611,9 +3611,40 @@ function espToggle(){
 // público normal, no un dispositivo en la LAN).
 // Si PIDAC se abre desde el propio relay (http://IP:3000), usa ese mismo origen;
 // si se abre desde GitHub Pages, usa Render como antes.
-const RELAY_URL = (location.protocol==='http:' && location.port==='3000')
-  ? location.origin
-  : 'https://pidac-relay.onrender.com';
+// ── FUSIÓN con el buscador de cámara (antes index_snippet.html) ──────
+// Antes ese snippet REDIRIGÍA la página entera al relay local. Ahora PIDAC
+// pregunta a Render dónde está el relay local (/api/discover), lo usa como
+// RELAY_URL y muestra el video DENTRO de la pestaña "ESP32-CAM" del escáner.
+// Orden: (1) mismo origen si PIDAC se sirve desde el relay (:3000)
+//        (2) relay local descubierto por Render  (3) relay en Render.
+const RELAY_CLOUD = 'https://pidac-relay.onrender.com';
+const RELAY_SAME_ORIGIN = (location.protocol==='http:' && location.port==='3000');
+let RELAY_URL = RELAY_SAME_ORIGIN ? location.origin : RELAY_CLOUD;
+let ESP_MIXED_BLOCKED = false;   // relay local hallado pero bloqueado por http-desde-https
+
+function espIsMixedBlocked(url){
+  if(location.protocol!=='https:') return false;
+  if(!/^http:\/\//i.test(url)) return false;
+  return !/^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(url);
+}
+
+async function espResolveRelay(){
+  ESP.resolvedAt = Date.now();
+  if(RELAY_SAME_ORIGIN) return RELAY_URL;
+  ESP_MIXED_BLOCKED = false;
+  try{
+    const r = await fetch(RELAY_CLOUD+'/api/discover', {signal:AbortSignal.timeout(8000)});
+    const d = await r.json();
+    if(d.found && d.url){
+      const local = String(d.url).replace(/\/+$/,'');
+      ESP.localUrl = local;
+      if(espIsMixedBlocked(local)){ ESP_MIXED_BLOCKED = true; }
+      else { RELAY_URL = local; return RELAY_URL; }
+    }
+  }catch(e){ /* Render dormido o sin red: cae al relay en la nube */ }
+  RELAY_URL = RELAY_CLOUD;
+  return RELAY_URL;
+}
 
 // "ip" se mantiene como parámetro en estas funciones solo por
 // compatibilidad con el resto del código que ya las llama así —
@@ -3621,42 +3652,61 @@ const RELAY_URL = (location.protocol==='http:' && location.port==='3000')
 function espBase(ip){ return RELAY_URL; }
 function espStreamBase(ip){ return RELAY_URL; }
 
+async function espStatus(timeoutMs){
+  const go = async (u)=>{
+    try{ const r = await fetch(u+'/status', {signal:AbortSignal.timeout(timeoutMs)}); return await r.json(); }
+    catch(e){ return null; }
+  };
+  let d = await go(RELAY_URL);
+  // Si el relay local no contesta (CORS / red privada), cae al de Render
+  if(!d && !RELAY_SAME_ORIGIN && RELAY_URL!==RELAY_CLOUD){
+    RELAY_URL = RELAY_CLOUD;
+    d = await go(RELAY_URL);
+  }
+  return d;
+}
+
 async function espTryHost(host, timeoutMs){
-  try{
-    const r = await fetch(RELAY_URL+'/status', {signal:AbortSignal.timeout(timeoutMs)});
-    const d = await r.json();
-    return d.connected ? {ip: RELAY_URL, model: d.model||'ESP32-CAM'} : null;
-  }catch(e){ return null; }
+  const d = await espStatus(timeoutMs);
+  return (d && d.connected) ? {ip: RELAY_URL, model: d.model||'ESP32-CAM'} : null;
+}
+
+function espWhere(){
+  return (RELAY_SAME_ORIGIN || RELAY_URL!==RELAY_CLOUD) ? 'red local' : 'nube';
 }
 
 async function espAutoDetect(auto){
   const res = document.getElementById('espScanRes');
   res.style.display='block';
-  espSetStatus('scan','Conectando al relay…');
+  espSetStatus('scan','Buscando cámara…');
+  await espResolveRelay();
   const found = await espTryHost(RELAY_URL, 4000);
   if(found){
-    res.innerHTML = `✅ Cámara conectada vía relay (${found.model})`;
+    res.innerHTML = `✅ Cámara conectada (${found.model}) · ${espWhere()}`;
     espConnect(RELAY_URL);
+  } else if(ESP_MIXED_BLOCKED){
+    res.innerHTML = `⚠️ Encontré tu relay local (${ESP.localUrl}) pero el navegador bloquea http dentro de una página https. `+
+      `<a href="${ESP.localUrl}" style="color:var(--accent)">Abre PIDAC desde el relay local</a> o pon HTTPS en el relay.`;
+    espSetStatus('err','Relay local bloqueado');
   } else {
-    res.innerHTML = '❌ El relay no reporta ninguna cámara activa — revisa que el ESP32 esté encendido, conectado a WiFi, y subiendo frames (Monitor Serie).';
+    res.innerHTML = '❌ No hay ninguna cámara activa — revisa que el ESP32 esté encendido, conectado a WiFi, y subiendo frames (Monitor Serie).';
     espSetStatus('err','Sin cámara');
   }
 }
 
-// ── Conectar (en la práctica: confirmar que el relay tiene cámara)
+// ── Conectar: re-descubre el relay (si hace falta) y confirma la cámara
 async function espConnect(ip, silent=false){
-  ESP.ip = RELAY_URL; // el argumento "ip" se ignora — solo hay un destino posible
   espSetStatus('scan', 'Conectando…');
-  try{
-    const r = await fetch(RELAY_URL+'/status', {signal:AbortSignal.timeout(3000)});
-    const d = await r.json();
-    espSetStatus(d.connected ? 'on' : 'err', (d.model||'ESP32-CAM')+(d.connected?'':' (sin señal)'));
-    document.getElementById('espConnected').style.display='flex';
-    if(!silent) showToast(d.connected ? '📷 ESP32-CAM conectada vía relay' : '⚠️ Relay activo pero sin señal del ESP32');
+  if(Date.now()-(ESP.resolvedAt||0) > 20000) await espResolveRelay();
+  const d = await espStatus(3000);
+  ESP.ip = RELAY_URL;   // tras un posible fallback a la nube
+  document.getElementById('espConnected').style.display='flex';
+  if(d){
+    espSetStatus(d.connected ? 'on' : 'err', (d.model||'ESP32-CAM')+(d.connected?' · '+espWhere():' (sin señal)'));
+    if(!silent) showToast(d.connected ? '📷 ESP32-CAM conectada ('+espWhere()+')' : '⚠️ Relay activo pero sin señal del ESP32');
     if(ESP.source==='esp32') espActivateStream();
-  } catch(e){
-    espSetStatus('err', 'Relay no responde');
-    document.getElementById('espConnected').style.display='flex';
+  } else {
+    espSetStatus('err', ESP_MIXED_BLOCKED ? 'Relay local bloqueado (http/https)' : 'Relay no responde');
     if(!silent) showToast('❌ No se pudo conectar al relay');
   }
   ESP.live = true;
