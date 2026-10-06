@@ -3609,7 +3609,11 @@ function espToggle(){
 // hace falta "encontrar" nada, ni preocuparse por aislamiento de
 // clientes en redes de universidad/oficina (el relay es un servidor
 // público normal, no un dispositivo en la LAN).
-const RELAY_URL = 'https://pidac-relay.onrender.com'; // debe ser IGUAL al RELAY_URL del .ino
+// Si PIDAC se abre desde el propio relay (http://IP:3000), usa ese mismo origen;
+// si se abre desde GitHub Pages, usa Render como antes.
+const RELAY_URL = (location.protocol==='http:' && location.port==='3000')
+  ? location.origin
+  : 'https://pidac-relay.onrender.com';
 
 // "ip" se mantiene como parámetro en estas funciones solo por
 // compatibilidad con el resto del código que ya las llama así —
