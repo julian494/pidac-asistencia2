@@ -3639,7 +3639,14 @@ async function espResolveRelay(){
     if(d.found && d.url){
       const local = String(d.url).replace(/\/+$/,'');
       ESP.localUrl = local;
-      if(espIsMixedBlocked(local)){ ESP_MIXED_BLOCKED = true; }
+      if(espIsMixedBlocked(local)){
+        // Pagina https + relay http => probar la version https del mismo relay
+        const secure = local.replace(/^http:/i,'https:');
+        let ok = false;
+        try{ const rr = await fetch(secure+'/status',{signal:AbortSignal.timeout(4000)}); ok = rr.ok; }catch(e){}
+        if(ok){ ESP.localUrl = secure; RELAY_URL = secure; return RELAY_URL; }
+        ESP_MIXED_BLOCKED = true;
+      }
       else { RELAY_URL = local; return RELAY_URL; }
     }
   }catch(e){ /* Render dormido o sin red: cae al relay en la nube */ }
@@ -3687,7 +3694,7 @@ async function espAutoDetect(auto){
     espConnect(RELAY_URL);
   } else if(ESP_MIXED_BLOCKED){
     res.innerHTML = `⚠️ Encontré tu relay local (${ESP.localUrl}) pero el navegador bloquea http dentro de una página https. `+
-      `<a href="${ESP.localUrl}" style="color:var(--accent)">Abre PIDAC desde el relay local</a> o pon HTTPS en el relay.`;
+      `<a href="${ESP.localUrl}" style="color:var(--accent)">Abre PIDAC desde el relay local</a> o cierra y abre <b>iniciar.bat</b> de nuevo (crea el certificado HTTPS) y pulsa Detectar.`;
     espSetStatus('err','Relay local bloqueado');
   } else {
     res.innerHTML = '❌ No hay ninguna cámara activa — revisa que el ESP32 esté encendido, conectado a WiFi, y subiendo frames (Monitor Serie).';
