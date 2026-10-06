@@ -3618,7 +3618,8 @@ function espToggle(){
 // Orden: (1) mismo origen si PIDAC se sirve desde el relay (:3000)
 //        (2) relay local descubierto por Render  (3) relay en Render.
 const RELAY_CLOUD = 'https://pidac-relay.onrender.com';
-const RELAY_SAME_ORIGIN = (location.protocol==='http:' && location.port==='3000');
+// Si PIDAC se abre por http (servido por el relay local, cualquier puerto: 3000, 5000...), el relay ES el mismo origen
+const RELAY_SAME_ORIGIN = (location.protocol==='http:');
 let RELAY_URL = RELAY_SAME_ORIGIN ? location.origin : RELAY_CLOUD;
 let ESP_MIXED_BLOCKED = false;   // relay local hallado pero bloqueado por http-desde-https
 
