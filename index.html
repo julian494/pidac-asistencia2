@@ -380,7 +380,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 
 /* HUD overlay — marco general de la cámara */
-.cam-hud{position:absolute;inset:0;pointer-events:none;z-index:5}
+.cam-hud{position:absolute;inset:0;pointer-events:none;z-index:12}
 .cam-hud-corner{position:absolute;width:22px;height:22px;border-color:rgba(0,229,160,.7);border-style:solid;transition:border-color .3s}
 .cam-hud-corner.tl{top:10px;left:10px;border-width:2px 0 0 2px;border-radius:4px 0 0 0}
 .cam-hud-corner.tr{top:10px;right:10px;border-width:2px 2px 0 0;border-radius:0 4px 0 0}
@@ -396,7 +396,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .hud-dot.yellow{background:var(--warn)}
 
 /* Contador FPS */
-.cam-fps-hud{position:absolute;bottom:10px;right:10px;background:rgba(7,16,31,.65);border-radius:6px;padding:2px 7px;font-size:10px;color:var(--muted);font-family:var(--mono);z-index:6}
+.cam-fps-hud{position:absolute;bottom:10px;right:10px;background:rgba(7,16,31,.65);border-radius:6px;padding:2px 7px;font-size:10px;color:var(--muted);font-family:var(--mono);z-index:13}
 
 /* Panel de detectados mejorado */
 .detected-panel{margin-top:.875rem;background:var(--surface2);border:1px solid var(--border);border-radius:14px;overflow:hidden}
@@ -442,6 +442,7 @@ canvas.face-overlay{
   position:absolute;inset:0;
   width:100%;height:100%;
   pointer-events:none;
+  z-index:11;            /* por encima de la capa del stream ESP32 (z-index:10) */
   /* El canvas se espeja igual que el video */
   transform:scaleX(-1);
 }
@@ -2792,6 +2793,32 @@ function onMpResults(results){
 
 
 
+// Recuadro de escaneo cuando aún no hay caras (esquinas respirando + haz de luz)
+function drawIdleReticle(ctx,vw,vh,light){
+  const t=performance.now();
+  const size=Math.min(vw,vh)*0.58;
+  const x=(vw-size)/2, y=(vh-size)/2-vh*0.02;
+  const c=size*0.17, r=Math.max(5,size*0.035);
+  const col=light==='low'||light==='high'?'#FFAA00':'#00E5A0';
+  ctx.save();
+  ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.strokeStyle=col;ctx.lineWidth=Math.max(2.5,size*0.014);
+  ctx.globalAlpha=0.55+0.4*Math.sin(t*0.004);
+  ctx.shadowColor=col;ctx.shadowBlur=10;
+  ctx.beginPath();ctx.moveTo(x+c,y);ctx.lineTo(x+r,y);ctx.arcTo(x,y,x,y+r,r);ctx.lineTo(x,y+c);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x+size-c,y);ctx.lineTo(x+size-r,y);ctx.arcTo(x+size,y,x+size,y+r,r);ctx.lineTo(x+size,y+c);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x,y+size-c);ctx.lineTo(x,y+size-r);ctx.arcTo(x,y+size,x+r,y+size,r);ctx.lineTo(x+c,y+size);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x+size,y+size-c);ctx.lineTo(x+size,y+size-r);ctx.arcTo(x+size,y+size,x+size-r,y+size,r);ctx.lineTo(x+size-c,y+size);ctx.stroke();
+  // Haz de escaneo que sube y baja
+  const p=(t%2400)/2400, q=p<0.5?p*2:(1-p)*2;
+  const by=y+q*size;
+  const g=ctx.createLinearGradient(x,0,x+size,0);
+  g.addColorStop(0,'transparent');g.addColorStop(0.5,col);g.addColorStop(1,'transparent');
+  ctx.globalAlpha=0.9;ctx.strokeStyle=g;ctx.lineWidth=2;ctx.shadowBlur=14;
+  ctx.beginPath();ctx.moveTo(x+size*0.06,by);ctx.lineTo(x+size*0.94,by);ctx.stroke();
+  ctx.restore();
+}
+
 function drawScanBox(ctx, x, y, w, h, color, label, confPct, student){
   const t   = performance.now();
   const pad = Math.max(w,h)*0.08; // padding alrededor de la cara
@@ -3049,128 +3076,269 @@ async function startScan(){
 }
 
 
+// ═══════════════════════════════════════════════════════
+//  MOTOR DE RECONOCIMIENTO v8  (cámara local y ESP32)
+//  · Detección y dibujo desacoplados: la caja se mueve fluida aunque la IA tarde.
+//  · Seguimiento (tracking) por caja: el reconocimiento pesado solo corre cuando hace falta.
+//  · Auto-exposición por software para ESP32 (poca luz / contraluz).
+// ═══════════════════════════════════════════════════════
+function frIou(a,b){
+  const x1=Math.max(a.x,b.x),y1=Math.max(a.y,b.y);
+  const x2=Math.min(a.x+a.w,b.x+b.w),y2=Math.min(a.y+a.h,b.y+b.h);
+  const inter=Math.max(0,x2-x1)*Math.max(0,y2-y1);
+  const uni=a.w*a.h+b.w*b.h-inter;
+  return uni>0?inter/uni:0;
+}
+// Empareja cajas nuevas con las que ya se seguían (voraz por mayor IoU)
+function frAssociate(tracks,found,minIou){
+  const pairs=[];
+  tracks.forEach((t,ti)=>found.forEach((f,fi)=>{const v=frIou(t.box,f);if(v>=minIou)pairs.push([v,ti,fi]);}));
+  pairs.sort((p,q)=>q[0]-p[0]);
+  const ut=new Set(),uf=new Set(),match=[];
+  pairs.forEach(([v,ti,fi])=>{if(ut.has(ti)||uf.has(fi))return;ut.add(ti);uf.add(fi);match.push([ti,fi]);});
+  return{
+    match,
+    newFound:found.map((_,i)=>i).filter(i=>!uf.has(i)),
+    lostTracks:tracks.map((_,i)=>i).filter(i=>!ut.has(i))
+  };
+}
+// Ganancia automática hacia luminancia objetivo (suavizada para que no parpadee)
+function frAutoGain(luma,prevGain){
+  const want=Math.max(0.85,Math.min(2.4,125/Math.max(luma,20)));
+  return prevGain+(want-prevGain)*0.35;
+}
+// ¿Esta cara necesita (re)calcular el descriptor ahora?
+function frNeedsRecog(t,now,need){
+  if(t.state==='far'||t.state==='detected')return false;
+  if(t.state==='known')return t.hits<need||now-t.lastRecog>2500;
+  if(t.state==='unknown')return now-t.lastRecog>800;
+  return true; // 'analyzing'
+}
+
 async function runFaceLoop(){
   const video   = document.getElementById('cam-feed');
   const overlay = document.getElementById('face-overlay');
   if(!video||!scanActive) return;
-  const ctx = overlay.getContext('2d');
-  // Espejo: cámara local sí, ESP32 no (ya viene sin espejo del servidor)
-  overlay.style.transform = window._espScanActive ? '' : 'scaleX(-1)';
+  // Token de generación: si se vuelve a llamar runFaceLoop, los bucles viejos terminan (evita bucles duplicados)
+  const gen=(window._frGen=(window._frGen||0)+1);
+  const alive=()=>scanActive&&window._frGen===gen;
+  const ctx=overlay.getContext('2d');
 
-  // OffscreenCanvas 320x240 para detección rápida
-  const off=document.createElement('canvas');
-  off.width=320;off.height=240;
+  const off=document.createElement('canvas'); off.width=320; off.height=240;
   const offCtx=off.getContext('2d',{willReadFrequently:true});
+  const lumC=document.createElement('canvas'); lumC.width=24; lumC.height=24;
+  const lumCtx=lumC.getContext('2d',{willReadFrequently:true});
+  const canFilter=('filter' in offCtx);
 
-  // Una sola instancia de opciones (no recrear cada frame)
-  const OPTS=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.38,inputSize:224});
-  const OPTS_ESP=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.38,inputSize:320}); // caras más pequeñas/lejanas
+  const OPTS    =new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.38,inputSize:224});
+  const OPTS_ESP=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.30,inputSize:320}); // más sensible: luz baja / caras lejanas
 
-  let lastRecog=0, cachedDets=[];
-  const RECOG_MS=180; // ~5fps de IA — suficiente para aula
+  let tracks=[], nextId=1, srcKey='';
+  let gain=1, contrast=1.1, lastLuma=128, busy=false;
 
-  const loop=async()=>{
-    if(!scanActive){ctx.clearRect(0,0,overlay.width,overlay.height);return;}
-
-    // Fuente de imagen: ESP32 (<img> MJPEG) o cámara local (<video>).
-    // OJO: en un stream MJPEG img.complete NUNCA pasa a true (la conexión no termina),
-    // por eso antes se descartaba la ESP32 y se analizaba el <video> local vacío.
+  const pickSource=()=>{
     const espImg=window._espScanActive?document.getElementById('esp-stream-img'):null;
+    // OJO: en un MJPEG img.complete nunca es true; basta con naturalWidth
     const useEsp=!!(espImg&&espImg.naturalWidth>10);
-    const camSrc=useEsp?espImg:video;
-    overlay.style.transform=useEsp?'':'scaleX(-1)';   // la ESP32 no va en espejo
+    return{
+      useEsp,
+      camSrc:useEsp?espImg:video,
+      vw:useEsp?espImg.naturalWidth:(video.videoWidth||320),
+      vh:useEsp?espImg.naturalHeight:(video.videoHeight||240)
+    };
+  };
 
-    // Sync canvas
-    const vw=useEsp?espImg.naturalWidth:(video.videoWidth||320);
-    const vh=useEsp?espImg.naturalHeight:(video.videoHeight||240);
-    if(overlay.width!==vw||overlay.height!==vh){overlay.width=vw;overlay.height=vh;}
+  // Luminancia media (0-255) de la cara más grande, o del centro si no hay caras
+  const measureLuma=(S)=>{
+    try{
+      let rx=S.vw*0.25,ry=S.vh*0.25,rw=S.vw*0.5,rh=S.vh*0.5;
+      if(tracks.length){
+        const b=tracks.reduce((m,t)=>t.box.w>m.w?t.box:m,tracks[0].box);
+        rx=Math.max(0,b.x);ry=Math.max(0,b.y);rw=Math.min(S.vw-rx,b.w);rh=Math.min(S.vh-ry,b.h);
+      }
+      if(rw<4||rh<4)return null;
+      lumCtx.drawImage(S.camSrc,rx,ry,rw,rh,0,0,24,24);
+      const d=lumCtx.getImageData(0,0,24,24).data;
+      let sum=0;for(let i=0;i<d.length;i+=4)sum+=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+      return sum/(d.length/4);
+    }catch(e){return null;}
+  };
 
-    // FPS
+  function markPresent(sid,conf){
+    if(recentlyMarked.has(sid))return;
+    const stu=students.find(s=>s.id===sid);
+    if(!stu)return;
+    recentlyMarked.add(sid);
+    stu.status='present';
+    fbSet('students',sid,{status:'present',updatedAt:new Date().toISOString()});
+    renderTable(document.getElementById('att-search')?.value||'');
+    updateStats();addDetectedPanel(stu,conf);showQuickToast(stu.name);
+    if(typeof sendPushNotification==='function')
+      sendPushNotification('✓ Asistencia',stu.name+' — presente');
+    setTimeout(()=>recentlyMarked.delete(sid),FR_COOLDOWN);
+  }
+
+  function recognize(t,f,now,S){
+    const m=faceMatcher.findBestMatch(f.descriptor);
+    const dist=m.distance;
+    const ok=m.label!=='unknown'&&dist<FR_THRESHOLD;
+    t.lastRecog=now;
+    if(ok){
+      t.hits=(t.studentId===m.label)?t.hits+1:1;
+      t.studentId=m.label;
+      t.conf=Math.max(0,Math.min(100,Math.round((1-dist/FR_THRESHOLD)*100)));
+      t.state='known';t.unknownTries=0;
+      // ESP32: 2 aciertos seguidos (más imagen ruidosa → evita falsos positivos)
+      if(t.hits>=(S.useEsp?2:FR_CONFIRM))markPresent(m.label,t.conf);
+    }else{
+      t.hits=0;t.studentId=null;t.conf=null;
+      t.unknownTries=(t.unknownTries||0)+1;
+      t.state=t.unknownTries>=3?'unknown':'analyzing';
+    }
+  }
+
+  function updateTrack(t,f,now,S){
+    if(!faceMatcher){t.state='detected';return;}
+    const small=f.w<Math.max(44,S.vw*0.07);   // cara demasiado pequeña → descriptor poco fiable
+    if(small){t.state='far';t.studentId=null;t.conf=null;t.hits=0;return;}
+    if(t.state==='far')t.state='analyzing';
+    if(f.descriptor)recognize(t,f,now,S);
+  }
+
+  async function detectTick(){
+    if(busy||!modelsLoaded)return;
+    const S=pickSource();
+    if(S.vw<20||S.vh<20)return;
+    if(!S.useEsp&&video.readyState<2)return;
+    busy=true;
+    try{
+      const key=S.useEsp?'esp':'local';
+      if(key!==srcKey){srcKey=key;tracks=[];gain=1;}
+
+      // Auto-exposición por software (solo se APLICA a la ESP32; la webcam ya se autoexpone)
+      const L=measureLuma(S);
+      if(L!=null){
+        lastLuma=lastLuma*0.6+L*0.4;
+        if(S.useEsp){gain=frAutoGain(lastLuma,gain);contrast=lastLuma<70?1.25:1.12;}
+      }
+
+      // Cámara local 320x240 (como siempre). ESP32: tamaño real (hasta 640).
+      const ow=S.useEsp?Math.min(S.vw,640):320;
+      const oh=S.useEsp?Math.round(ow*S.vh/S.vw):240;
+      if(off.width!==ow||off.height!==oh){off.width=ow;off.height=oh;}
+      if(S.useEsp&&canFilter)offCtx.filter='brightness('+gain.toFixed(2)+') contrast('+contrast.toFixed(2)+')';
+      offCtx.drawImage(S.camSrc,0,0,ow,oh);
+      if(canFilter)offCtx.filter='none';
+
+      const sx=S.vw/ow,sy=S.vh/oh;
+      const sc=b=>({x:b.x*sx,y:b.y*sy,w:b.width*sx,h:b.height*sy});
+      const O=S.useEsp?OPTS_ESP:OPTS;
+      const now=performance.now();
+      const need=S.useEsp?2:FR_CONFIRM;
+
+      // Pipeline completo (landmarks+descriptor) SOLO si alguna cara lo necesita; si no, solo detector (mucho más rápido)
+      const wantFull=!!faceMatcher&&(tracks.length===0||tracks.some(t=>frNeedsRecog(t,now,need)));
+      let found;
+      if(wantFull){
+        const dets=await faceapi.detectAllFaces(off,O).withFaceLandmarks(true).withFaceDescriptors();
+        found=dets.map(d=>Object.assign(sc(d.detection.box),{descriptor:d.descriptor}));
+      }else{
+        const dets=await faceapi.detectAllFaces(off,O);
+        found=dets.map(d=>Object.assign(sc(d.box),{descriptor:null}));
+      }
+      if(!alive())return;
+
+      const A=frAssociate(tracks,found,0.2);
+      A.match.forEach(([ti,fi])=>{
+        const t=tracks[ti],f=found[fi];
+        t.box={x:f.x,y:f.y,w:f.w,h:f.h};t.miss=0;
+        updateTrack(t,f,now,S);
+      });
+      A.lostTracks.forEach(ti=>{tracks[ti].miss++;});
+      A.newFound.forEach(fi=>{
+        const f=found[fi];
+        const t={id:nextId++,box:{x:f.x,y:f.y,w:f.w,h:f.h},d:{x:f.x,y:f.y,w:f.w,h:f.h},
+                 miss:0,studentId:null,conf:null,state:faceMatcher?'analyzing':'detected',
+                 hits:0,lastRecog:0,unknownTries:0};
+        tracks.push(t);
+        updateTrack(t,f,now,S);
+      });
+      tracks=tracks.filter(t=>t.miss<=4);   // tolera ~1 s sin ver la cara antes de borrarla (sin parpadeo)
+    }catch(e){
+      if(!window._frErrLogged){window._frErrLogged=1;console.error('Error en reconocimiento:',e);}
+    }finally{
+      busy=false;
+    }
+  }
+
+  // Bucle de IA: corre lo más rápido que pueda, sin bloquear el dibujo
+  (async()=>{
+    while(alive()){
+      const t0=performance.now();
+      await detectTick();
+      await new Promise(r=>setTimeout(r,Math.max(25,70-(performance.now()-t0))));
+    }
+  })();
+
+  // Bucle de dibujo (rAF): cajas suavizadas + recuadro de escaneo
+  const render=()=>{
+    if(!alive()){ctx.clearRect(0,0,overlay.width,overlay.height);return;}
+    const S=pickSource();
+    overlay.style.transform=S.useEsp?'':'scaleX(-1)';   // la ESP32 no va en espejo
+    if(overlay.width!==S.vw||overlay.height!==S.vh){overlay.width=S.vw;overlay.height=S.vh;}
+
     _fpsFrames++;
-    const now=performance.now();
-    if(now-_fpsLast>=1000){
+    const nowT=performance.now();
+    if(nowT-_fpsLast>=1000){
       const el=document.getElementById('fps-val');
-      if(el)el.textContent=Math.round(_fpsFrames*1000/(now-_fpsLast));
-      _fpsFrames=0;_fpsLast=now;
+      if(el)el.textContent=Math.round(_fpsFrames*1000/(nowT-_fpsLast));
+      _fpsFrames=0;_fpsLast=nowT;
     }
 
-    // Detección + reconocimiento throttled
-    if(modelsLoaded&&now-lastRecog>=RECOG_MS){
-      lastRecog=now;
-      try{
-        // Cámara local: 320x240 como siempre. ESP32: tamaño real (hasta 640 de ancho),
-        // porque la cara suele estar más lejos y a 320x240 queda de pocos píxeles.
-        const ow=useEsp?Math.min(espImg.naturalWidth,640):320;
-        const oh=useEsp?Math.round(ow*espImg.naturalHeight/espImg.naturalWidth):240;
-        if(off.width!==ow||off.height!==oh){off.width=ow;off.height=oh;}
-        offCtx.drawImage(camSrc,0,0,ow,oh);
-        const sx=vw/ow,sy=vh/oh;
-        const O=useEsp?OPTS_ESP:OPTS;
-
-        if(faceMatcher){
-          const dets=await faceapi.detectAllFaces(off,O)
-            .withFaceLandmarks(true).withFaceDescriptors();
-          cachedDets=dets.map(det=>{
-            const b=det.detection.box;
-            const match=faceMatcher.findBestMatch(det.descriptor);
-            const dist=match.distance;
-            const ok=match.label!=='unknown'&&dist<FR_THRESHOLD;
-            const conf=ok?Math.max(0,Math.min(100,Math.round((1-dist/FR_THRESHOLD)*100))):null;
-            if(ok){
-              const sid=match.label;
-              confirmBuffer[sid]=(confirmBuffer[sid]||0)+1;
-              if(confirmBuffer[sid]>=FR_CONFIRM&&!recentlyMarked.has(sid)){
-                recentlyMarked.add(sid);confirmBuffer[sid]=0;
-                const stu=students.find(s=>s.id===sid);
-                if(stu){
-                  stu.status='present';
-                  fbSet('students',sid,{status:'present',updatedAt:new Date().toISOString()});
-                  renderTable(document.getElementById('att-search')?.value||'');
-                  updateStats();addDetectedPanel(stu,conf);showQuickToast(stu.name);
-                  if(typeof sendPushNotification==='function')
-                    sendPushNotification('✓ Asistencia',stu.name+' — presente');
-                  setTimeout(()=>recentlyMarked.delete(sid),FR_COOLDOWN);
-                }
-              }
-            }
-            const stu=ok?students.find(s=>s.id===match.label):null;
-            return{
-              x:b.x*sx,y:b.y*sy,w:b.width*sx,h:b.height*sy,
-              label:stu?stu.name.split(' ').slice(0,2).join(' '):(ok?'...':'Desconocido'),
-              color:stu?(conf>=85?'#00E5A0':'#7FFFD4'):'#FF3D5A',
-              conf,studentId:ok?match.label:null
-            };
-          });
-          Object.keys(confirmBuffer).forEach(k=>{
-            if(!cachedDets.find(d=>d.studentId===k))confirmBuffer[k]=0;
-          });
-        } else {
-          const dets=await faceapi.detectAllFaces(off,O);
-          cachedDets=dets.map(d=>({
-            x:d.box.x*sx,y:d.box.y*sy,w:d.box.width*sx,h:d.box.height*sy,
-            label:'Detectado',color:'#00B8FF',conf:null,studentId:null
-          }));
-        }
-      }catch(e){ if(!window._frErrLogged){window._frErrLogged=1;console.error('Error en reconocimiento:',e);} }
-    }
-
-    // Dibujar
     ctx.clearRect(0,0,overlay.width,overlay.height);
-    const dot=document.getElementById('hud-dot');
-    const lbl=document.getElementById('hud-label');
+    const lightState=lastLuma<55?'low':(lastLuma>205?'high':'ok');
+
+    // Recuadro de escaneo cuando todavía no hay ninguna cara
+    if(modelsLoaded&&tracks.length===0)drawIdleReticle(ctx,S.vw,S.vh,lightState);
+
+    tracks.forEach(t=>{
+      const k=0.5;   // interpolación hacia la última detección → movimiento fluido
+      t.d.x+=(t.box.x-t.d.x)*k;t.d.y+=(t.box.y-t.d.y)*k;
+      t.d.w+=(t.box.w-t.d.w)*k;t.d.h+=(t.box.h-t.d.h)*k;
+      let color,label,conf=null,known=false;
+      if(t.state==='known'){
+        const stu=students.find(s=>s.id===t.studentId);
+        conf=t.conf;known=!!stu;
+        label=stu?stu.name.split(' ').slice(0,2).join(' '):'...';
+        color=conf>=85?'#00E5A0':'#7FFFD4';
+      }else if(t.state==='unknown'){color='#FF3D5A';label='Desconocido';}
+      else if(t.state==='far'){color='#FFAA00';label='Acércate';}
+      else if(t.state==='detected'){color='#00B8FF';label='Detectado';}
+      else{color='#FFAA00';label='Analizando…';}
+      if(t.miss>0)ctx.globalAlpha=Math.max(0.25,1-t.miss*0.25);
+      drawScanBox(ctx,t.d.x,t.d.y,t.d.w,t.d.h,color,label,conf,known);
+      ctx.globalAlpha=1;
+    });
+
+    // HUD de texto
+    const dot=document.getElementById('hud-dot'),lbl=document.getElementById('hud-label');
     if(dot&&lbl){
       if(!modelsLoaded){dot.className='hud-dot yellow';lbl.textContent='CARGANDO IA…';}
-      else if(cachedDets.length>0){
+      else if(tracks.length){
         dot.className='hud-dot';
-        lbl.textContent=cachedDets.length===1?'1 CARA':cachedDets.length+' CARAS';
-      }else{dot.className='hud-dot yellow';lbl.textContent=faceMatcher?'BUSCANDO...':'ACERCA TU CARA';}
+        const known=tracks.filter(t=>t.state==='known').length;
+        lbl.textContent=tracks.some(t=>t.state==='analyzing')?'ANALIZANDO…'
+          :tracks.some(t=>t.state==='far')?'ACÉRCATE'
+          :known?(known===1?'RECONOCIDO':known+' RECONOCIDOS')
+          :(tracks.length===1?'1 CARA':tracks.length+' CARAS');
+      }else{
+        dot.className='hud-dot yellow';
+        lbl.textContent=lightState==='low'?'POCA LUZ':lightState==='high'?'MUCHA LUZ':(faceMatcher?'ESCANEANDO…':'ACERCA TU CARA');
+      }
     }
-    cachedDets.forEach(d=>{
-      drawScanBox(ctx,d.x,d.y,d.w,d.h,d.color,d.label,d.conf,!!d.studentId);
-    });
-    _faceLoopId=requestAnimationFrame(loop);
+    _faceLoopId=requestAnimationFrame(render);
   };
-  _faceLoopId=requestAnimationFrame(loop);
+  _faceLoopId=requestAnimationFrame(render);
 }
 
 
