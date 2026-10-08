@@ -3064,6 +3064,7 @@ async function runFaceLoop(){
 
   // Una sola instancia de opciones (no recrear cada frame)
   const OPTS=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.38,inputSize:224});
+  const OPTS_ESP=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.38,inputSize:320}); // caras más pequeñas/lejanas
 
   let lastRecog=0, cachedDets=[];
   const RECOG_MS=180; // ~5fps de IA — suficiente para aula
@@ -3071,8 +3072,17 @@ async function runFaceLoop(){
   const loop=async()=>{
     if(!scanActive){ctx.clearRect(0,0,overlay.width,overlay.height);return;}
 
+    // Fuente de imagen: ESP32 (<img> MJPEG) o cámara local (<video>).
+    // OJO: en un stream MJPEG img.complete NUNCA pasa a true (la conexión no termina),
+    // por eso antes se descartaba la ESP32 y se analizaba el <video> local vacío.
+    const espImg=window._espScanActive?document.getElementById('esp-stream-img'):null;
+    const useEsp=!!(espImg&&espImg.naturalWidth>10);
+    const camSrc=useEsp?espImg:video;
+    overlay.style.transform=useEsp?'':'scaleX(-1)';   // la ESP32 no va en espejo
+
     // Sync canvas
-    const vw=video.videoWidth||320,vh=video.videoHeight||240;
+    const vw=useEsp?espImg.naturalWidth:(video.videoWidth||320);
+    const vh=useEsp?espImg.naturalHeight:(video.videoHeight||240);
     if(overlay.width!==vw||overlay.height!==vh){overlay.width=vw;overlay.height=vh;}
 
     // FPS
@@ -3088,14 +3098,17 @@ async function runFaceLoop(){
     if(modelsLoaded&&now-lastRecog>=RECOG_MS){
       lastRecog=now;
       try{
-      const espImg=window._espScanActive?document.getElementById('esp-stream-img'):null;
-      const useEsp=espImg&&espImg.naturalWidth>10&&espImg.complete;
-      const camSrc=useEsp?espImg:video;
-        offCtx.drawImage(camSrc,0,0,320,240);
-        const sx=vw/320,sy=vh/240;
+        // Cámara local: 320x240 como siempre. ESP32: tamaño real (hasta 640 de ancho),
+        // porque la cara suele estar más lejos y a 320x240 queda de pocos píxeles.
+        const ow=useEsp?Math.min(espImg.naturalWidth,640):320;
+        const oh=useEsp?Math.round(ow*espImg.naturalHeight/espImg.naturalWidth):240;
+        if(off.width!==ow||off.height!==oh){off.width=ow;off.height=oh;}
+        offCtx.drawImage(camSrc,0,0,ow,oh);
+        const sx=vw/ow,sy=vh/oh;
+        const O=useEsp?OPTS_ESP:OPTS;
 
         if(faceMatcher){
-          const dets=await faceapi.detectAllFaces(off,OPTS)
+          const dets=await faceapi.detectAllFaces(off,O)
             .withFaceLandmarks(true).withFaceDescriptors();
           cachedDets=dets.map(det=>{
             const b=det.detection.box;
@@ -3132,13 +3145,13 @@ async function runFaceLoop(){
             if(!cachedDets.find(d=>d.studentId===k))confirmBuffer[k]=0;
           });
         } else {
-          const dets=await faceapi.detectAllFaces(off,OPTS);
+          const dets=await faceapi.detectAllFaces(off,O);
           cachedDets=dets.map(d=>({
             x:d.box.x*sx,y:d.box.y*sy,w:d.box.width*sx,h:d.box.height*sy,
             label:'Detectado',color:'#00B8FF',conf:null,studentId:null
           }));
         }
-      }catch(e){}
+      }catch(e){ if(!window._frErrLogged){window._frErrLogged=1;console.error('Error en reconocimiento:',e);} }
     }
 
     // Dibujar
