@@ -3131,7 +3131,7 @@ async function runFaceLoop(){
   const canFilter=('filter' in offCtx);
 
   const OPTS    =new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.38,inputSize:224});
-  const OPTS_ESP=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.30,inputSize:320}); // más sensible: luz baja / caras lejanas
+  const OPTS_ESP=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.30,inputSize:256}); // más sensible: luz baja / caras lejanas
 
   let tracks=[], nextId=1, srcKey='';
   let gain=1, contrast=1.1, lastLuma=128, busy=false;
@@ -3189,7 +3189,7 @@ async function runFaceLoop(){
       t.conf=Math.max(0,Math.min(100,Math.round((1-dist/FR_THRESHOLD)*100)));
       t.state='known';t.unknownTries=0;
       // ESP32: 2 aciertos seguidos (más imagen ruidosa → evita falsos positivos)
-      if(t.hits>=(S.useEsp?2:FR_CONFIRM))markPresent(m.label,t.conf);
+      if(t.hits>=(S.useEsp?(dist<0.34?1:2):FR_CONFIRM))markPresent(m.label,t.conf);
     }else{
       t.hits=0;t.studentId=null;t.conf=null;
       t.unknownTries=(t.unknownTries||0)+1;
@@ -3223,7 +3223,7 @@ async function runFaceLoop(){
       }
 
       // Cámara local 320x240 (como siempre). ESP32: tamaño real (hasta 640).
-      const ow=S.useEsp?Math.min(S.vw,640):320;
+      const ow=S.useEsp?Math.min(S.vw,480):320;
       const oh=S.useEsp?Math.round(ow*S.vh/S.vw):240;
       if(off.width!==ow||off.height!==oh){off.width=ow;off.height=oh;}
       if(S.useEsp&&canFilter)offCtx.filter='brightness('+gain.toFixed(2)+') contrast('+contrast.toFixed(2)+')';
@@ -3276,7 +3276,7 @@ async function runFaceLoop(){
     while(alive()){
       const t0=performance.now();
       await detectTick();
-      await new Promise(r=>setTimeout(r,Math.max(25,70-(performance.now()-t0))));
+      await new Promise(r=>setTimeout(r,Math.max(8,40-(performance.now()-t0))));
     }
   })();
 
@@ -3284,7 +3284,7 @@ async function runFaceLoop(){
   const render=()=>{
     if(!alive()){ctx.clearRect(0,0,overlay.width,overlay.height);return;}
     const S=pickSource();
-    overlay.style.transform=S.useEsp?'':'scaleX(-1)';   // la ESP32 no va en espejo
+    overlay.style.transform=S.useEsp?'none':'scaleX(-1)';   // la ESP32 no va en espejo
     if(overlay.width!==S.vw||overlay.height!==S.vh){overlay.width=S.vw;overlay.height=S.vh;}
 
     _fpsFrames++;
