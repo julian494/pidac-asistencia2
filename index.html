@@ -2172,7 +2172,8 @@ async function clearAllFaces(){
   const batch=db.batch();
   Object.keys(faces).forEach(id=>batch.delete(db.collection('faces').doc(id)));
   await batch.commit();
-  faceMatcher=null; faceDescriptors=[];
+  faceMatcher=null; faceDescriptors=[]; _descSig='';
+  try{localStorage.removeItem('pidac_desc_cache');}catch(e){}
   showToast('Fotos eliminadas');
 }
 
@@ -2653,10 +2654,20 @@ async function confirmImport(){
 // ═══════════════════════════════════════════════════════
 
 // ── Constantes de reconocimiento
-const FR_THRESHOLD  = 0.45;   // distancia máxima para match (más bajo = más estricto)
-const FR_CONFIRM    = 1;       // frames consecutivos para confirmar identidad
-const FR_COOLDOWN   = 12000;   // ms sin re-marcar al mismo estudiante
-const confirmBuffer = {};      // studentId → frames consecutivos detectados
+// Distancia euclídea entre descriptores (0 = idéntico). Misma persona ≈ 0.20-0.38; distinta ≈ 0.50+
+const FR_STRONG       = 0.34;  // match muy seguro → se marca al instante (1 solo frame)
+const FR_THRESHOLD    = 0.42;  // máximo para aceptar un match (más bajo = más estricto)
+const FR_MARGIN       = 0.05;  // el mejor candidato debe ganarle al 2.º estudiante por al menos esto
+const FR_CONFIRM      = 2;     // aciertos seguidos para matches no-fuertes (cámara PC)
+const FR_CONFIRM_ESP  = 3;     // idem para ESP32 (imagen más ruidosa)
+const FR_MIN_FACE     = 0.11;  // ancho mínimo de cara (fracción del ancho del frame); más chica = "Acércate"
+const FR_REL_FACE     = 0.45;  // ignora caras menores al 45% de la más grande (gente al fondo)
+const FR_MAX_PER_TICK = 2;     // máx. caras que se reconocen por ciclo (las más grandes primero)
+const FR_REVERIFY     = 2500;  // ms entre re-verificaciones de una cara ya reconocida
+const FR_DESC_VER     = 2;     // sube este número para invalidar la caché de descriptores
+const FR_COOLDOWN     = 12000; // ms sin re-marcar al mismo estudiante
+// En la consola: FR_DEBUG=true muestra distancias reales para afinar los umbrales de arriba
+window.FR_DEBUG = false;
 
 // ── Estado del motor (modelsLoaded ya declarado en globals)
 // // modelsLoaded ya declarado en globals (línea ~82217)
@@ -2692,7 +2703,9 @@ function loadModels(){
   if(modelsLoaded) return Promise.resolve();
   if(modelsPromise) return modelsPromise;
   modelsPromise = Promise.all([loadMediaPipe(), loadFaceApiSSD()])
-    .then(([mp, ssd])=>{
+    .then(async ([mp, ssd])=>{
+      try{ faceapi.tf.enableProdMode(); }catch(e){}
+      await frWarmup();   // compila los shaders WebGL ahora → el 1er reconocimiento real ya es instantáneo
       modelsLoaded = true;
       console.log(`✓ Motor IA listo`);
     });
@@ -2729,52 +2742,141 @@ function loadImageFromDataURL(dataURL){
   });
 }
 
-// ── Construir descriptores con SSD (fallback a Tiny)
-async function buildDescriptors(){
-  if(!modelsLoaded) return;
-  faceDescriptors=[];
-  let built=0,failed=0;
-  const opts1=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.1,inputSize:160});
-  const opts2=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.08,inputSize:320});
-  const entries=Object.entries(faces||{});
-  if(!entries.length){faceMatcher=null;return;}
+// ═══ DESCRIPTORES: variantes (espejo + brillo), caché local y matcher propio ═══
+let _descSig='', _descBusy=null;
 
-  // Procesar en lotes de 3 en paralelo
-  for(let i=0;i<entries.length;i+=3){
-    await Promise.all(entries.slice(i,i+3).map(async([sid,data])=>{
-      if(!data.photo)return;
-      try{
-        const img=await makeImg(data.photo,160);
-        let det=await faceapi.detectSingleFace(img,opts1).withFaceLandmarks(true).withFaceDescriptor();
-        if(!det){
-          const img2=await makeImg(data.photo,320);
-          det=await faceapi.detectSingleFace(img2,opts2).withFaceLandmarks(true).withFaceDescriptor();
-        }
-        if(det){faceDescriptors.push({studentId:sid,descriptors:[det.descriptor]});built++;}
-        else failed++;
-      }catch(e){failed++;}
-    }));
-  }
-  if(faceDescriptors.length>0){
-    faceMatcher=new faceapi.FaceMatcher(
-      faceDescriptors.map(fd=>new faceapi.LabeledFaceDescriptors(fd.studentId,fd.descriptors)),
-      FR_THRESHOLD
-    );
-    console.log(`✓ FaceMatcher: ${built} OK, ${failed} sin descriptor`);
-  }else{faceMatcher=null;}
+function frLoadImg(src){
+  return new Promise((res,rej)=>{
+    const img=new Image(); img.crossOrigin='anonymous';
+    img.onload=()=>res(img); img.onerror=rej; img.src=src;
+  });
 }
 
-function makeImg(dataURL,size){
-  return new Promise((res,rej)=>{
-    const img=new Image();img.crossOrigin='anonymous';
-    img.onload=()=>{
-      const c=document.createElement('canvas');c.width=c.height=size;
-      const ctx=c.getContext('2d');ctx.filter='contrast(1.1) brightness(1.05)';
-      ctx.drawImage(img,0,0,size,size);
-      const out=new Image();out.onload=()=>res(out);out.onerror=rej;
-      out.src=c.toDataURL('image/jpeg',0.9);
-    };img.onerror=rej;img.src=dataURL;
-  });
+// Recorta la cara (con margen) de la fuente a resolución completa y la deja en outC (224 px de ancho)
+function frCropFace(src,sw,sh,box,outC,filt){
+  const pw=box.w*0.35, ph=box.h*0.35;
+  const x=Math.max(0,box.x-pw), y=Math.max(0,box.y-ph);
+  const x2=Math.min(sw,box.x+box.w+pw), y2=Math.min(sh,box.y+box.h+ph);
+  const cw=Math.max(8,x2-x), ch=Math.max(8,y2-y);
+  const ow=224, oh=Math.max(32,Math.round(ow*ch/cw));
+  if(outC.width!==ow||outC.height!==oh){outC.width=ow;outC.height=oh;}
+  const c=outC.getContext('2d');
+  c.filter=filt||'none';
+  c.drawImage(src,x,y,cw,ch,0,0,ow,oh);
+  c.filter='none';
+  return outC;
+}
+
+let _frCropOpts=null;
+async function frDescriptor(cropC){
+  if(!_frCropOpts)_frCropOpts=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.25,inputSize:160});
+  const det=await faceapi.detectSingleFace(cropC,_frCropOpts).withFaceLandmarks(true).withFaceDescriptor();
+  return det?det.descriptor:null;
+}
+
+// 4 descriptores por foto: normal/espejo × brillo normal/alto.
+// OJO: la foto se guarda en ESPEJO (se captura con scale(-1,1)) pero el video en vivo NO va en espejo;
+// sin la variante volteada el mismo rostro quedaba ~0.1 más lejos de sí mismo.
+async function frPhotoDescriptors(dataURL){
+  const img=await frLoadImg(dataURL);
+  const iw=img.naturalWidth||640, ih=img.naturalHeight||480;
+  const W=Math.min(640,iw), H=Math.round(W*ih/iw);
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  const crop=document.createElement('canvas');
+  const o1=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.2,inputSize:224});
+  const o2=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.08,inputSize:320});
+  const ctx=c.getContext('2d');
+  const out=[];
+  for(const flip of [false,true]) for(const br of [1,1.35]){
+    ctx.save();
+    ctx.filter=br===1?'none':'brightness('+br+')';
+    if(flip){ctx.translate(W,0);ctx.scale(-1,1);}
+    ctx.drawImage(img,0,0,W,H);
+    ctx.restore();
+    let dets=await faceapi.detectAllFaces(c,o1);
+    if(!dets.length)dets=await faceapi.detectAllFaces(c,o2);
+    if(!dets.length)continue;
+    const d0=dets.reduce((m,d)=>d.box.width>m.box.width?d:m);
+    const bx={x:d0.box.x,y:d0.box.y,w:d0.box.width,h:d0.box.height};
+    const desc=await frDescriptor(frCropFace(c,W,H,bx,crop,'none'));
+    if(desc)out.push(desc);
+  }
+  return out;
+}
+
+// Mejor estudiante + segundo mejor (para exigir margen y evitar confundir a dos personas parecidas)
+function frMatch(desc){
+  let best=9,bestId=null,second=9;
+  for(let k=0;k<faceDescriptors.length;k++){
+    const fd=faceDescriptors[k]; let d=9;
+    for(let j=0;j<fd.descriptors.length;j++){
+      const r=fd.descriptors[j]; let sum=0;
+      for(let i=0;i<128;i++){const x=desc[i]-r[i];sum+=x*x;}
+      const e=Math.sqrt(sum); if(e<d)d=e;
+    }
+    if(d<best){second=best;best=d;bestId=fd.studentId;}
+    else if(d<second){second=d;}
+  }
+  return {id:bestId,dist:best,second};
+}
+function frConf(dist){ return Math.max(0,Math.min(100,Math.round((0.55-dist)/(0.30)*100))); }
+
+function _descCacheLoad(){ try{return JSON.parse(localStorage.getItem('pidac_desc_cache')||'{}');}catch(e){return {};} }
+function _descCacheSave(o){ try{localStorage.setItem('pidac_desc_cache',JSON.stringify(o));}catch(e){} }
+
+async function frWarmup(){
+  try{
+    const c=document.createElement('canvas'); c.width=320; c.height=180;
+    c.getContext('2d').fillRect(0,0,320,180);
+    await faceapi.detectAllFaces(c,new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.5,inputSize:192}));
+    await faceapi.detectAllFaces(c,new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.5,inputSize:224}));
+    const f=document.createElement('canvas'); f.width=f.height=112;
+    f.getContext('2d').fillRect(0,0,112,112);
+    await faceapi.nets.faceLandmark68TinyNet.detectLandmarks(f);
+    const g=document.createElement('canvas'); g.width=g.height=150;
+    g.getContext('2d').fillRect(0,0,150,150);
+    await faceapi.computeFaceDescriptor(g);
+  }catch(e){ console.warn('warm-up omitido:',e.message); }
+}
+
+// Se llama muchas veces (cambios en Firebase, abrir cámara…): si las fotos no cambiaron, vuelve al instante.
+// Descriptores ya calculados salen de la caché del navegador → abrir la cámara es inmediato.
+async function buildDescriptors(){
+  if(!modelsLoaded) return;
+  const entries=Object.entries(faces||{}).filter(([,d])=>d&&d.photo);
+  const sig=entries.map(([id,d])=>id+':'+(d.registeredAt||'')).sort().join('|');
+  if(sig===_descSig&&(faceMatcher||!entries.length)) return;
+  if(_descBusy){ await _descBusy; if(sig===_descSig&&(faceMatcher||!entries.length)) return; }
+  _descBusy=(async()=>{
+    if(!entries.length){ faceDescriptors=[]; faceMatcher=null; _descSig=sig; return; }
+    const cache=_descCacheLoad(), next={}, list=[], todo=[];
+    for(const [sid,d] of entries){
+      const c=cache[sid];
+      if(c&&c.v===FR_DESC_VER&&c.t===(d.registeredAt||'')&&c.d&&c.d.length){
+        list.push({studentId:sid,descriptors:c.d.map(a=>Float32Array.from(a))});
+        next[sid]=c;
+      }else todo.push([sid,d]);
+    }
+    const publish=()=>{ faceDescriptors=list.slice(); faceMatcher=list.length?{findBest:frMatch}:null; };
+    publish();   // lo que ya estaba en caché queda disponible YA
+    let failed=0;
+    for(let i=0;i<todo.length;i+=2){
+      await Promise.all(todo.slice(i,i+2).map(async([sid,d])=>{
+        try{
+          const ds=await frPhotoDescriptors(d.photo);
+          if(ds.length){
+            list.push({studentId:sid,descriptors:ds});
+            next[sid]={v:FR_DESC_VER,t:d.registeredAt||'',d:ds.map(a=>Array.from(a,x=>Math.round(x*1e4)/1e4))};
+          }else failed++;
+        }catch(e){failed++;}
+      }));
+      publish();   // disponibles de forma progresiva
+    }
+    _descCacheSave(next);
+    _descSig=sig;
+    console.log('✓ Descriptores: '+list.length+' estudiantes ('+(entries.length-todo.length)+' de caché, '+failed+' sin rostro detectable)');
+  })();
+  try{ await _descBusy; } finally { _descBusy=null; }
 }
 
 
@@ -3110,8 +3212,8 @@ function frAutoGain(luma,prevGain){
 // ¿Esta cara necesita (re)calcular el descriptor ahora?
 function frNeedsRecog(t,now,need){
   if(t.state==='far'||t.state==='detected')return false;
-  if(t.state==='known')return t.hits<need||now-t.lastRecog>2500;
-  if(t.state==='unknown')return now-t.lastRecog>800;
+  if(t.state==='known')return (!t.done&&t.hits<need)||now-t.lastRecog>FR_REVERIFY;
+  if(t.state==='unknown')return now-t.lastRecog>600;
   return true; // 'analyzing'
 }
 
@@ -3130,8 +3232,12 @@ async function runFaceLoop(){
   const lumCtx=lumC.getContext('2d',{willReadFrequently:true});
   const canFilter=('filter' in offCtx);
 
-  const OPTS    =new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.38,inputSize:224});
-  const OPTS_ESP=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.30,inputSize:256}); // más sensible: luz baja / caras lejanas
+  // Umbral alto: antes (0.38/0.30) se colaban cuadros falsos (carteles, murales, gente al fondo).
+  // Solo se DETECTA aquí (barato); el reconocimiento se hace aparte sobre un recorte de alta resolución.
+  const OPTS    =new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.50,inputSize:192});
+  const OPTS_ESP=new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.42,inputSize:224});
+  const cropC=document.createElement('canvas');
+  let curMaxW=0;
 
   let tracks=[], nextId=1, srcKey='';
   let gain=1, contrast=1.1, lastLuma=128, busy=false;
@@ -3178,31 +3284,39 @@ async function runFaceLoop(){
     setTimeout(()=>recentlyMarked.delete(sid),FR_COOLDOWN);
   }
 
-  function recognize(t,f,now,S){
-    const m=faceMatcher.findBestMatch(f.descriptor);
-    const dist=m.distance;
-    const ok=m.label!=='unknown'&&dist<FR_THRESHOLD;
+  const eligible=(t,S)=>t.box.w>=S.vw*FR_MIN_FACE && t.box.w>=curMaxW*FR_REL_FACE;
+
+  function recognize(t,desc,now,S){
+    const m=frMatch(desc);
     t.lastRecog=now;
+    if(window.FR_DEBUG){
+      const nm=students.find(x=>x.id===m.id)?.name;
+      console.log('FR '+(nm||'?')+'  dist='+m.dist.toFixed(3)+'  2º='+m.second.toFixed(3)+'  face='+Math.round(t.box.w)+'px');
+    }
+    const ok=m.id&&m.dist<FR_THRESHOLD&&(m.second-m.dist)>=FR_MARGIN;
     if(ok){
-      t.hits=(t.studentId===m.label)?t.hits+1:1;
-      t.studentId=m.label;
-      t.conf=Math.max(0,Math.min(100,Math.round((1-dist/FR_THRESHOLD)*100)));
-      t.state='known';t.unknownTries=0;
-      // ESP32: 2 aciertos seguidos (más imagen ruidosa → evita falsos positivos)
-      if(t.hits>=(S.useEsp?(dist<0.34?1:2):FR_CONFIRM))markPresent(m.label,t.conf);
+      t.hits=(t.studentId===m.id)?t.hits+1:1;
+      t.studentId=m.id;
+      t.conf=frConf(m.dist);
+      t.unknownTries=0;
+      const need=m.dist<FR_STRONG?1:(S.useEsp?FR_CONFIRM_ESP:FR_CONFIRM);
+      if(t.hits>=need){
+        t.state='known';
+        if(!t.done){t.done=true;markPresent(m.id,t.conf);}
+      }else t.state='analyzing';
     }else{
-      t.hits=0;t.studentId=null;t.conf=null;
       t.unknownTries=(t.unknownTries||0)+1;
+      t.hits=Math.max(0,t.hits-1);
+      if(t.state==='known'&&t.unknownTries<2)return;   // tolera 1 fallo suelto en una cara ya confirmada
       t.state=t.unknownTries>=3?'unknown':'analyzing';
+      t.conf=null;t.done=false;
     }
   }
 
-  function updateTrack(t,f,now,S){
+  function updateTrackState(t,S){
     if(!faceMatcher){t.state='detected';return;}
-    const small=f.w<Math.max(44,S.vw*0.07);   // cara demasiado pequeña → descriptor poco fiable
-    if(small){t.state='far';t.studentId=null;t.conf=null;t.hits=0;return;}
-    if(t.state==='far')t.state='analyzing';
-    if(f.descriptor)recognize(t,f,now,S);
+    if(!eligible(t,S)){t.state='far';t.studentId=null;t.conf=null;t.hits=0;t.done=false;return;}
+    if(t.state==='far'||t.state==='detected')t.state='analyzing';
   }
 
   async function detectTick(){
@@ -3222,48 +3336,54 @@ async function runFaceLoop(){
         if(S.useEsp){gain=frAutoGain(lastLuma,gain);contrast=lastLuma<70?1.25:1.12;}
       }
 
-      // Cámara local 320x240 (como siempre). ESP32: tamaño real (hasta 640).
+      // Detección en baja resolución y SIN deformar (antes la webcam 16:9 se aplastaba a 4:3)
       const ow=S.useEsp?Math.min(S.vw,480):320;
-      const oh=S.useEsp?Math.round(ow*S.vh/S.vw):240;
+      const oh=Math.round(ow*S.vh/S.vw);
       if(off.width!==ow||off.height!==oh){off.width=ow;off.height=oh;}
-      if(S.useEsp&&canFilter)offCtx.filter='brightness('+gain.toFixed(2)+') contrast('+contrast.toFixed(2)+')';
+      const filt=(S.useEsp&&canFilter)?'brightness('+gain.toFixed(2)+') contrast('+contrast.toFixed(2)+')':'none';
+      if(canFilter)offCtx.filter=filt;
       offCtx.drawImage(S.camSrc,0,0,ow,oh);
       if(canFilter)offCtx.filter='none';
 
       const sx=S.vw/ow,sy=S.vh/oh;
       const sc=b=>({x:b.x*sx,y:b.y*sy,w:b.width*sx,h:b.height*sy});
       const O=S.useEsp?OPTS_ESP:OPTS;
-      const now=performance.now();
-      const need=S.useEsp?2:FR_CONFIRM;
 
-      // Pipeline completo (landmarks+descriptor) SOLO si alguna cara lo necesita; si no, solo detector (mucho más rápido)
-      const wantFull=!!faceMatcher&&(tracks.length===0||tracks.some(t=>frNeedsRecog(t,now,need)));
-      let found;
-      if(wantFull){
-        const dets=await faceapi.detectAllFaces(off,O).withFaceLandmarks(true).withFaceDescriptors();
-        found=dets.map(d=>Object.assign(sc(d.detection.box),{descriptor:d.descriptor}));
-      }else{
-        const dets=await faceapi.detectAllFaces(off,O);
-        found=dets.map(d=>Object.assign(sc(d.box),{descriptor:null}));
-      }
+      const dets=await faceapi.detectAllFaces(off,O);
       if(!alive())return;
+      // descarta cajas con proporciones que no son de una cara
+      const found=dets.filter(d=>{const r=d.box.width/d.box.height;return r>0.55&&r<1.6;}).map(d=>sc(d.box));
+      curMaxW=found.reduce((m,f)=>Math.max(m,f.w),0);
 
       const A=frAssociate(tracks,found,0.2);
       A.match.forEach(([ti,fi])=>{
         const t=tracks[ti],f=found[fi];
         t.box={x:f.x,y:f.y,w:f.w,h:f.h};t.miss=0;
-        updateTrack(t,f,now,S);
       });
       A.lostTracks.forEach(ti=>{tracks[ti].miss++;});
       A.newFound.forEach(fi=>{
         const f=found[fi];
-        const t={id:nextId++,box:{x:f.x,y:f.y,w:f.w,h:f.h},d:{x:f.x,y:f.y,w:f.w,h:f.h},
+        tracks.push({id:nextId++,box:{x:f.x,y:f.y,w:f.w,h:f.h},d:{x:f.x,y:f.y,w:f.w,h:f.h},
                  miss:0,studentId:null,conf:null,state:faceMatcher?'analyzing':'detected',
-                 hits:0,lastRecog:0,unknownTries:0};
-        tracks.push(t);
-        updateTrack(t,f,now,S);
+                 hits:0,lastRecog:0,unknownTries:0,done:false});
       });
       tracks=tracks.filter(t=>t.miss<=4);   // tolera ~1 s sin ver la cara antes de borrarla (sin parpadeo)
+      tracks.forEach(t=>updateTrackState(t,S));
+
+      // Reconocimiento: solo las caras principales que lo necesiten, sobre un recorte a RESOLUCIÓN COMPLETA
+      if(faceMatcher){
+        const now=performance.now();
+        const need=S.useEsp?FR_CONFIRM_ESP:FR_CONFIRM;
+        const cand=tracks.filter(t=>t.miss===0&&t.state!=='far'&&frNeedsRecog(t,now,need))
+                         .sort((a,b)=>b.box.w-a.box.w).slice(0,FR_MAX_PER_TICK);
+        for(const t of cand){
+          frCropFace(S.camSrc,S.vw,S.vh,t.box,cropC,filt);
+          const desc=await frDescriptor(cropC);
+          if(!alive())return;
+          if(desc)recognize(t,desc,now,S);
+          else t.lastRecog=now;
+        }
+      }
     }catch(e){
       if(!window._frErrLogged){window._frErrLogged=1;console.error('Error en reconocimiento:',e);}
     }finally{
@@ -3276,7 +3396,7 @@ async function runFaceLoop(){
     while(alive()){
       const t0=performance.now();
       await detectTick();
-      await new Promise(r=>setTimeout(r,Math.max(8,40-(performance.now()-t0))));
+      await new Promise(r=>setTimeout(r,Math.max(4,30-(performance.now()-t0))));
     }
   })();
 
